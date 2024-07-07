@@ -32,38 +32,6 @@
 		<meta name="msapplication-task" content="name=WeatherNotFound;action-uri=/weather;icon-uri=/favicon.jpg" />
 
 		<title>WeatherNotFound</title>
-		<style>
-			body {
-				font-size: 1rem;
-			}
-			@media (max-width: 768px) {
-				h1 {
-					font-size: 3rem; /* Smaller font size on smaller screens */
-				}
-				h2, h3 {
-					font-size: 1.5rem;
-				}
-				input, button {
-					width: 90%; /* Full width with a little padding */
-					font-size: 1rem;
-				}
-			}
-			@media (min-width: 769px) {
-				h1 {
-					font-size: 6rem; /* Larger font size on larger screens */
-				}
-				h2 {
-					font-size: 3rem;
-				}
-				h3 {
-					font-size: 2rem;
-				}
-				input, button {
-					width: 400px; /* Fixed width on larger screens */
-					font-size: 1.25rem;
-				}
-			}
-		</style>
 	</head>
 	<body class="bg-emerald-900">
 		<div class="flex flex-col items-center justify-center h-screen">
@@ -71,7 +39,7 @@
 				<h2 class="text-3xl font-light text-white mt-2 drop-shadow-xl">Your Personal Weather Dashboard</h2>
 				<div class="mt-8">
 					<form id="weatherForm" action="/weather" method="GET">
-						<input type="text" name="location" placeholder="Enter a city or location..." class="text-lg p-4 w-96 rounded-md bg-slate-200" required />
+						<input type="text" name="location" placeholder="Enter a city or location..." class="text-lg p-4 w-96 rounded-md bg-slate-200 text-black" required />
 						<button type="submit" class="bg-indigo-500 text-white hover:bg-indigo-700 rounded-xl p-5 shadow-black shadow-sm hover:shadow-xl">Search</button>
 					</form>
 				</div>
