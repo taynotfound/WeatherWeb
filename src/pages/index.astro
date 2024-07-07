@@ -5,7 +5,7 @@
 	<head>
 		<meta charset="utf-8" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.jpg" />
-		<meta name="viewport" content="width=device-width" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<meta name="description" content="WeatherNotFound - Your Personal Weather Dashboard" />
 		<meta name="author" content="TayNotFound" />
 		<meta name="keywords" content="weather, dashboard, personal, location, city, forecast" />
@@ -32,44 +32,75 @@
 		<meta name="msapplication-task" content="name=WeatherNotFound;action-uri=/weather;icon-uri=/favicon.jpg" />
 
 		<title>WeatherNotFound</title>
-		
+		<style>
+			body {
+				font-size: 1rem;
+			}
+			@media (max-width: 768px) {
+				h1 {
+					font-size: 3rem; /* Smaller font size on smaller screens */
+				}
+				h2, h3 {
+					font-size: 1.5rem;
+				}
+				input, button {
+					width: 90%; /* Full width with a little padding */
+					font-size: 1rem;
+				}
+			}
+			@media (min-width: 769px) {
+				h1 {
+					font-size: 6rem; /* Larger font size on larger screens */
+				}
+				h2 {
+					font-size: 3rem;
+				}
+				h3 {
+					font-size: 2rem;
+				}
+				input, button {
+					width: 400px; /* Fixed width on larger screens */
+					font-size: 1.25rem;
+				}
+			}
+		</style>
 	</head>
 	<body class="bg-emerald-900">
 		<div class="flex flex-col items-center justify-center h-screen">
-			<h1 class="text-6xl font-bold text-white drop-shadow-2xl drop-shadow-black">WeatherNotFound</h1>
-			<h2 class="text-3xl font-light text-white mt-2 drop-shadow-xl">Your Personal Weather Dashboard</h2>
-			<div class="mt-8">
-				<form id="weatherForm" action="/weather" method="GET">
-					<input type="text" name="location" placeholder="Enter a city or location..." class="text-lg p-4 w-96 rounded-md bg-slate-200" required />
-					<button type="submit" class="bg-indigo-500 text-white hover:bg-indigo-700 rounded-xl p-5 shadow-black shadow-sm hover:shadow-xl">Search</button>
-				</form>
+				<h1 class="text-6xl  font-bold text-white drop-shadow-2xl drop-shadow-black">WeatherNotFound</h1>
+				<h2 class="text-3xl font-light text-white mt-2 drop-shadow-xl">Your Personal Weather Dashboard</h2>
+				<div class="mt-8">
+					<form id="weatherForm" action="/weather" method="GET">
+						<input type="text" name="location" placeholder="Enter a city or location..." class="text-lg p-4 w-96 rounded-md bg-slate-200" required />
+						<button type="submit" class="bg-indigo-500 text-white hover:bg-indigo-700 rounded-xl p-5 shadow-black shadow-sm hover:shadow-xl">Search</button>
+					</form>
+				</div>
+				<h3 class="text-2xl font-light text-white mt-2 drop-shadow-xl">Starred Locations</h3>
+
+				<div id="starredLocationsList" class="mt-4">
+				</div>
 			</div>
-			<h3 class="text-2xl font-light text-white mt-2 drop-shadow-xl">Starred Locations</h3>
+			<script>
+				document.addEventListener('DOMContentLoaded', function() {
+					const locationsList = document.getElementById('starredLocationsList');
+					if (!locationsList) return; // Guard clause if locationsList is null
 
-			<div id="starredLocationsList" class="mt-4">
-			</div>
-		</div>
-		<script>
-			document.addEventListener('DOMContentLoaded', function() {
-				const locationsList = document.getElementById('starredLocationsList');
-				if (!locationsList) return; // Guard clause if locationsList is null
+					let starredLocations = JSON.parse(localStorage.getItem('starredLocations') || '[]'); // Handle null from localStorage
 
-				let starredLocations = JSON.parse(localStorage.getItem('starredLocations') || '[]'); // Handle null from localStorage
+					function updateLocationsList() {
+						if (!locationsList) return; // Ensure locationsList is not null
+						locationsList.innerHTML = ''; // Clear existing list
+						starredLocations.forEach((loc: string) => { // Explicitly declare loc as string
+							const link = document.createElement('a');
+							link.href = `/weather?location=${encodeURIComponent(loc)}`;
+							link.textContent = loc;
+							link.classList.add('text-black', 'hover:text-indigo-500', 'block', 'mt-2', "bg-slate-200", "p-2", "rounded-md");
+							locationsList.appendChild(link);
+						});
+					}
 
-				function updateLocationsList() {
-					if (!locationsList) return; // Ensure locationsList is not null
-					locationsList.innerHTML = ''; // Clear existing list
-					starredLocations.forEach((loc: string) => { // Explicitly declare loc as string
-						const link = document.createElement('a');
-						link.href = `/weather?location=${encodeURIComponent(loc)}`;
-						link.textContent = loc;
-						link.classList.add('text-black', 'hover:text-indigo-500', 'block', 'mt-2', "bg-slate-200", "p-2", "rounded-md");
-						locationsList.appendChild(link);
-					});
-				}
-
-				updateLocationsList(); // Call this function to update the list on page load
-			});
-		</script>
+					updateLocationsList(); // Call this function to update the list on page load
+				});
+			</script>
 	</body>
 </html>
