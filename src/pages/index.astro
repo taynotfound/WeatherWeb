@@ -1,12 +1,5 @@
 ---
-let handleSubmit = function handleSubmit(event: Event) {
-				event.preventDefault();
-				const locationInput = (document.getElementById('text') as HTMLInputElement).value;
-				window.location.href = `/#weather-${locationInput}`;
-			}
-
-			const url = new URL(Astro.request.url);
-			console.log(url, "Hash");
+// Ensure necessary imports and setup are here
 ---
 <html lang="en">
 	<head>
@@ -15,83 +8,44 @@ let handleSubmit = function handleSubmit(event: Event) {
 		<meta name="viewport" content="width=device-width" />
 		<meta name="generator" content={Astro.generator} />
 		<title>WeatherNotFound</title>
+		
 	</head>
 	<body class="bg-emerald-900">
 		<div class="flex flex-col items-center justify-center h-screen">
 			<h1 class="text-6xl font-bold text-white drop-shadow-2xl drop-shadow-black">WeatherNotFound</h1>
 			<h2 class="text-3xl font-light text-white mt-2 drop-shadow-xl">Your Personal Weather Dashboard</h2>
 			<div class="mt-8">
-				<form id="weatherForm" onsubmit="handleWeatherSearch(event)">
-					<input type="text" id="locationInput" placeholder="Enter a city or location..." class="text-lg p-4 w-96 rounded-md bg-slate-200" required />
+				<form id="weatherForm" action="/weather" method="GET">
+					<input type="text" name="location" placeholder="Enter a city or location..." class="text-lg p-4 w-96 rounded-md bg-slate-200" required />
 					<button type="submit" class="bg-indigo-500 text-white p-2 hover:bg-indigo-700 rounded-xl p-5 shadow-black shadow-sm hover:shadow-xl">Search</button>
 				</form>
-				<div id="weatherOverlay" style="z-index: 99999; display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(6, 78, 59, 1); color:white; text-align:center; padding-top:20%;">
-					<h1 id="weatherResult">Weather Info Appears Here</h1>
-				</div>
 			</div>
-			<!-- <div class="flex justify-around items-center mt-12 px-32 ">
-				<div class="text-center bg-blue-600 rounded-lg p-5 ml-5">
-					<img src="https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fcdn3.iconfinder.com%2Fdata%2Fluchesa-vol-9%2F128%2FWeather-1024.png&f=1&nofb=1&ipt=4b8f59e045de9b790511fcc4b000bfc4f7f0db70331aa7275c51eda78e5ffb0d&ipo=images" alt="Current Weather" class="w-20 h-20 mx-auto" />
-					<p class="text-white mt-2">Get real-time weather updates for your location.</p>
-				</div>
-				<div class="text-center bg-blue-600 rounded-lg p-5 ml-5">
-					<img src="https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fst2.depositphotos.com%2F2697407%2F8436%2Fv%2F450%2Fdepositphotos_84362504-stock-illustration-low-poly-weather-icon-forecast.jpg&f=1&nofb=1&ipt=706b334e967f9d8878da5b106fe56e23d952add2f20268a925e28039b0543ae0&ipo=images" alt="Forecast" class="w-20 h-20 mx-auto" />
-					<p class="text-white mt-2">View detailed weather forecasts for the week ahead.</p>
-				</div>
-				<div class="text-center bg-blue-600 rounded-lg p-5 ml-5">
-					<img src="https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fst2.depositphotos.com%2F2697407%2F8436%2Fv%2F450%2Fdepositphotos_84362504-stock-illustration-low-poly-weather-icon-forecast.jpg&f=1&nofb=1&ipt=706b334e967f9d8878da5b106fe56e23d952add2f20268a925e28039b0543ae0&ipo=images" alt="Climate Data" class="w-20 h-20 mx-auto" />
-					<p class="text-white mt-2">Access historical climate data and trends.</p>
-				</div>
+			<h3 class="text-2xl font-light text-white mt-2 drop-shadow-xl">Starred Locations</h3>
+
+			<div id="starredLocationsList" class="mt-4">
 			</div>
-		</div>-->
-		<script is:inline>
-			function handleWeatherSearch(event) {
-				event.preventDefault();
-				const locationInput = document.getElementById('locationInput').value;
-				displayLocation(locationInput);
-				window.location.hash = `weather-${locationInput}`;
-			}
-		
-			function displayLocation(location) {
-				const resultDiv = document.getElementById('weatherResult');
-				resultDiv.textContent = `Weather for: ${location}`;
-				const overlay = document.getElementById('weatherOverlay');
-				overlay.style.display = 'block'; // Show the overlay
-			}
-		
-			window.addEventListener('hashchange', () => {
-				const location = window.location.hash.slice(9); // Removes '#weather-' prefix
-				if (location) {
-					displayLocation(location);
-				} else {
-					document.getElementById('weatherOverlay').style.display = 'none'; // Hide the overlay if no location hash
+		</div>
+		<script>
+			document.addEventListener('DOMContentLoaded', function() {
+				const locationsList = document.getElementById('starredLocationsList');
+				if (!locationsList) return; // Guard clause if locationsList is null
+
+				let starredLocations = JSON.parse(localStorage.getItem('starredLocations') || '[]'); // Handle null from localStorage
+
+				function updateLocationsList() {
+					if (!locationsList) return; // Ensure locationsList is not null
+					locationsList.innerHTML = ''; // Clear existing list
+					starredLocations.forEach((loc: string) => { // Explicitly declare loc as string
+						const link = document.createElement('a');
+						link.href = `/weather?location=${encodeURIComponent(loc)}`;
+						link.textContent = loc;
+						link.classList.add('text-black', 'hover:text-indigo-500', 'block', 'mt-2', "bg-slate-200", "p-2", "rounded-md");
+						locationsList.appendChild(link);
+					});
 				}
+
+				updateLocationsList(); // Call this function to update the list on page load
 			});
-		
-			window.onload = () => {
-				if (window.location.hash.startsWith('#weather-')) {
-					const location = window.location.hash.slice(9); // Removes '#weather-' prefix
-					displayLocation(location);
-				}
-				setTimeout(() => {
-					console.log("Hey Snoopy!")
-					wait(500)
-				console.log("What's up?")
-				wait(500)
-				console.log("Thought I'd check in on you.")
-				wait(500)
-				console.log("Anyway, I'm off to the beach. Catch you later!")
-				wait(400)
-				console.log("Stay Awesome!")
-
-				}, 500);
-				
-			};
-			function wait(ms) {
-				return new Promise(resolve => setTimeout(resolve, ms));
-			}
-
-
 		</script>
 	</body>
 </html>
