@@ -1,0 +1,310 @@
+---
+import fetch from 'node-fetch'; // Ensure node-fetch is installed
+
+const url = new URL(Astro.request.url);
+const location = url.searchParams.get('location')?.toString() || 'World';
+const secretVar = import.meta.env.WEATHER_API;
+
+// Fetch weather data
+const weatherResponse = await fetch(`https://api.weatherapi.com/v1/forecast.json?q=${location}&key=${secretVar}&days=3`);
+interface WeatherData {
+  alerts?: any; // Define more specific types based on actual data structure
+  forecast: {
+    forecastday: Array<{
+      date: string;
+      day: {
+        condition: {
+          text: string;
+          icon: string;
+        },
+        maxtemp_c: number;
+        mintemp_c: number;
+        avgtemp_c: number;
+        totalprecip_mm: number;
+        daily_chance_of_rain: number;
+      }
+    }>;
+  };
+  current: {
+    condition: {
+      text: string;
+      icon: string;
+    },
+    temp_c: number;
+    last_updated: string;
+    feelslike_c: number;
+    cloud: number;
+    vis_km: number;
+    precip_mm: number;
+    wind_kph: number;
+    wind_dir: string;
+    humidity: number;
+  };
+  location: {
+    region: string;
+    country: string;
+  };
+}
+
+const weatherData: WeatherData = await weatherResponse.json() as WeatherData;
+console.log(weatherData.alerts);
+
+//Go through the forecast and make a array with 7 days of weather
+let forecast = [];
+for (let i = 1; i < 7; i++) {
+    if(weatherData.forecast.forecastday[i] == undefined)
+        break;
+    forecast.push(weatherData.forecast.forecastday[i]);
+}
+console.log(forecast.length);
+// Define Country Codes
+type CountryCodes = {
+    [key: string]: string;
+};
+let CountryShortCodes: CountryCodes = {
+    "Germany": "DE",
+    "United States of America": "US",
+    "United Kingdom": "GB",
+    "France": "FR",
+    "Italy": "IT",
+    "Spain": "ES",
+    "Netherlands": "NL",
+    "Belgium": "BE",
+    "Switzerland": "CH",
+    "Austria": "AT",
+    "Poland": "PL",
+    "Denmark": "DK",
+    "Sweden": "SE",
+    "Norway": "NO",
+    "Finland": "FI",
+    "Czech Republic": "CZ",
+    "Slovakia": "SK",
+    "Hungary": "HU",
+    "Romania": "RO",
+    "Bulgaria": "BG",
+    "Greece": "GR",
+    "Portugal": "PT",
+    "Ireland": "IE",
+    "Croatia": "HR",
+    "Slovenia": "SI",
+    "Lithuania": "LT",
+    "Latvia": "LV",
+    "Estonia": "EE",
+    "Cyprus": "CY",
+    "Luxembourg": "LU",
+    "Malta": "MT",
+    "Iceland": "IS",
+    "Liechtenstein": "LI",
+    "Monaco": "MC",
+    "San Marino": "SM",
+    "Vatican City": "VA",
+    "Andorra": "AD",
+    "Gibraltar": "GI",
+    "Faroe Islands": "FO",
+    "Greenland": "GL",
+}
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href={weatherData.current.condition.icon} />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		<title>Weather for {location}</title>
+        
+	</head>
+	<body class="bg-emerald-900">
+        <div class="flex flex-col items-center justify-center min-h-screen">
+            <div class="flex flex-col items-center justify-center">
+                <div class="w-full flex justify-between px-5">
+                    <button id="backButton" class="bg-gray-300 rounded-md text-black hover:text-white hover:bg-gray-400 p-1 mt-2">Back</button>
+                    <button id="starButton" class="bg-yellow-200 rounded-md text-black hover:text-fuchsia-900 hover:bg-yellow-100 p-1 mt-2">Toggle Star Location</button>
+                </div>
+                <img src={weatherData.current.condition.icon} alt="Weather Icon" id="weatherIcon" class="inline-block mr-2" />
+                <h1 class="text-3xl font-medium text-white drop-shadow-2xl mx-5 text-center">Weather for <span class="font-bold" id="location">{location}, {weatherData.location.region}, {CountryShortCodes[weatherData.location.country] as String || weatherData.location.country}</span></h1>
+                <h2 class="text-xl font-light text-white mt-2 drop-shadow-xl mx-5 text-center">
+                    {weatherData.alerts ? weatherData.alerts.map((alert: { event: string; desc: string }) => (
+                        <span class="bg-red-500 text-white p-2 rounded-lg shadow-lg">{alert.event}: {alert.desc}</span>
+                    )) : ''}
+  <span class="font-medium" id="condition">{weatherData.current.condition.text}</span> with <span class="font-medium" id="temp">{weatherData.current.temp_c}°C</span> at <span id="lastUpdate">{weatherData.current.last_updated}</span>
+                </h2>
+                <h3 class="text-white mt-4 font-light mx-5 text-center">Feels Like: <span class="font-medium" id="feelslike">{weatherData.current.feelslike_c}°C</span>. Cloud Coverage: <span class="font-medium">{weatherData.current.cloud}%</span>. Visibility: <span class="font-medium">{weatherData.current.vis_km} km.</span> Percipation: <span id="percip" class="font-medium">{weatherData.current.precip_mm} mm</span>. Chance of Rain: <span id="rainchan" class="font-medium">{weatherData.forecast.forecastday[0].day.daily_chance_of_rain}%</span></h3>
+                <span id="clothingAI" class="text-white mt-4">
+                <button class="mx-5 text-center bg-indigo-500 text-white hover:bg-indigo-700 rounded-xl p-2 shadow-black shadow-sm hover:shadow-xl" onclick=getClothingAI()>Get Clothing Suggestions</button>
+                </span>
+                <p class="text-white mt-4 mx-5 text-center">Wind: <span id="windspeed">{weatherData.current.wind_kph}</span> km/h</p>
+                <p class="text-white mt-4 mx-5 text-center">Wind Direction: {weatherData.current.wind_dir}</p>
+                <p class="text-white mt-4 mx-5 text-center">Humidity: {weatherData.current.humidity}%</p>
+                <h2 class="text-2xl font-medium text-white mt-4 drop-shadow-xl mx-5 text-center">Weather 2 Day Forecast</h2>
+                <div class="flex flex-wrap justify-center mx-5 text-center">
+                    {forecast.map(day => (
+                        <div class="bg-blue-500 rounded-lg shadow-lg p-4 m-4 max-w-sm">
+                            <img src={day.day.condition.icon} alt="Weather Icon" class="w-20 h-20 mx-auto" />
+                            <h3 class="text-lg font-bold text-center">{day.date}</h3>
+                            <p class="text-center">{day.day.condition.text}</p>
+                            <p class="text-center">Max Temp: {day.day.maxtemp_c}°C</p>
+                            <p class="text-center">Min Temp: {day.day.mintemp_c}°C</p>
+                            <p class="text-center">Avg Temp: {day.day.avgtemp_c}°C</p>
+                            <p class="text-center">Precipitation: {day.day.totalprecip_mm} mm</p>
+                            <p class="text-center">Chance of Rain: {day.day.daily_chance_of_rain}%</p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    </body>
+    <script is:inline>
+        window.onload = () => {
+            //Give the Condition a glow effect based on the weather condition
+            const condition = document.getElementById('condition');
+            console.log(condition.innerText);
+            if (condition.innerText.toLowerCase().includes('rain')) {
+                condition.style.textShadow = '0 0 10px #00f';
+            } else if (condition.innerText.toLowerCase().includes('cloud')) {
+                condition.style.textShadow = '0 0 10px #ccc';
+            } else if (condition.innerText.toLowerCase().includes('sun')) {
+                condition.style.textShadow = '0 0 10px #ff0';
+            } else if (condition.innerText.toLowerCase().includes('snow')) {
+                condition.style.textShadow = '0 0 10px #fff';
+            } else {
+                condition.style.textShadow = '0 0 10px #f0f';
+            }
+       
+           //Give the temperature a glow effect based on the temperature
+            const temp = document.getElementById('temp');
+            console.log(parseInt(temp.innerText));
+            if (parseInt(temp.innerText) >= 30) {
+                temp.style.textShadow = '0 0 10px #ff6f39';
+            } else if (parseInt(temp.innerText) >= 20) {
+                temp.style.textShadow = '0 0 10px #fdac54';
+            } else if (parseInt(temp.innerText) <= 10) {
+                temp.style.textShadow = '0 0 10px #5d9fff';
+            } else {
+                temp.style.textShadow = '0 0 10px #4390ff';
+            }
+
+            //Make last updated more readable
+            const lastUpdate = document.getElementById('lastUpdate');
+            const date = new Date(lastUpdate.innerText);
+            lastUpdate.innerText = `${date.toLocaleTimeString()} on ${date.toLocaleDateString()}`
+            const url = new URL(window.location.href);
+            const params = url.searchParams;
+            console.log(window.location)
+            for (const [key, value] of params.entries()) {
+                console.log(`${key}: ${value}`);
+            }
+            //Animate the weather icon by making it pulse by changing the size 
+            const icon = document.getElementById('weatherIcon');
+            icon.style.transition = 'transform 0.5s';
+            icon.style.transform = 'scale(1.2)';
+            setInterval(() => {
+                icon.style.transform = 'scale(1.1)';
+                setTimeout(() => {
+                    icon.style.transform = 'scale(1.2)';
+                }, 1000);
+            }, 2000);
+
+            
+
+            //Send the weather data to the server
+            
+            setTimeout(() => {
+                console.log("Hey Snoopy!")
+                setTimeout(() => {}, 500)
+                console.log("What's up?")
+                setTimeout(() => {}, 500)
+                console.log("Thought I'd check in on you.")
+                setTimeout(() => {}, 500)
+                console.log("Anyway, I'm off to the beach. Catch you later!")
+                setTimeout(() => {}, 700)
+                console.log("Stay Awesome!")
+
+            }, 500);
+
+            
+        };
+
+      let getClothingAI = async function getClothingAI(){
+        console.log("Getting Clothing Suggestions");
+        //Make Button inactive and show "Loading..."
+        const clothingAI = document.getElementById('clothingAI');
+        clothingAI.innerHTML = `<p class="text-grey-500 mt-4">Loading suggestion...</p>`;
+        const location = document.getElementById('location');
+            const feelslike = document.getElementById('feelslike');
+            const wind = document.getElementById('windspeed');
+            const condition = document.getElementById('condition');
+            const temp = document.getElementById('temp');
+
+            fetch("/api/clothing", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                   "location": location.innerText,
+                     "temp": temp.innerText,
+                        "condition": condition.innerText,
+                        "feelslike": feelslike.innerText,
+                        "wind": wind.innerText + " km/h"
+
+                })
+            }).then(response => response.json())
+                .then(data => {
+                    if(data.choices.length == 0){
+                        //Give an error message and show the button again
+                        const clothingAI = document.getElementById('clothingAI');
+                        clothingAI.innerHTML = `<p class="text-red-400 mt-4">We failed to generate the Clothing Suggestion. Please try again.</p>             <button class="bg-indigo-500 text-white hover:bg-indigo-700 rounded-xl p-2 shadow-black shadow-sm hover:shadow-xl" onclick=getClothingAI()>Get Clothing Suggestions</button>`
+                    }
+                    //Replace the button with the clothing suggestion
+                    const clothingAI = document.getElementById('clothingAI');
+                    clothingAI.innerHTML = `<p class="text-white mt-4"><span class="font-medium">${data.choices[0].message.content}</span></p>`;
+                })
+                .catch((error) => {
+                    console.log(error)
+                    //Give an error message and show the button again
+                    const clothingAI = document.getElementById('clothingAI');
+                    clothingAI.innerHTML = `<p class="text-red-400 mt-4">We failed to generate the Clothing Suggestion. Please try again.</p>             <button class="bg-indigo-500 text-white hover:bg-indigo-700 rounded-xl p-2 shadow-black shadow-sm hover:shadow-xl" onclick=getClothingAI()>Get Clothing Suggestions</button>
+`;
+                });
+      }
+
+      // Add the star button functionality
+      document.addEventListener('DOMContentLoaded', function() {
+        //Remove everything after the comma
+        const locationShort = document.getElementById('location').innerText.split(",")[0];
+        const starButton = document.getElementById('starButton');
+        let starredLocations = JSON.parse(localStorage.getItem('starredLocations')) || [];
+        const location = locationShort; // Assuming 'location' is available in the template
+
+        // Update button text based on star status
+        updateButton();
+
+        starButton.addEventListener('click', function() {
+            const index = starredLocations.indexOf(location);
+            if (index === -1) {
+                starredLocations.push(location);
+                alert('Location starred!');
+            } else {
+                starredLocations.splice(index, 1);
+                alert('Location unstarred!');
+            }
+            localStorage.setItem('starredLocations', JSON.stringify(starredLocations));
+            updateButton();
+        });
+
+        function updateButton() {
+            if (starredLocations.includes(location)) {
+                starButton.textContent = 'Unstar Location';
+            } else {
+                starButton.textContent = 'Star Location';
+            }
+        }
+      });
+
+      // Add functionality for the Back button
+      document.getElementById('backButton').addEventListener('click', function() {
+          window.history.back();
+      });
+    </script>
+</html>
