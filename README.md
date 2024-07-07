@@ -57,6 +57,7 @@ Ensure you have the following installed:
 
 - **Not Fully Responsive**: Some elements may not display correctly on all devices or screen sizes.
 - **Environment Variables Dependency**: If the `.env` file is not set up correctly, the application will not function. An error handling mechanism should be implemented to catch and report these issues effectively.
+- **Installing on Mobile on Chrome doesnt let you go back**
 
 ## Contact
 
