@@ -12,10 +12,10 @@ This Weather Dashboard is a comprehensive web application that allows users to l
 - **Autistic Friendly Design**: The interface is designed to be accessible and friendly for individuals with autism.
 - **No Bullshit**: Straightforward, efficient, and clutter-free user experience.
 
-
 ## Getting Started
 
 To use this dashboard, simply navigate to the deployed web application and enter a location to see the Weather
+
 ### Prerequisites
 
 Ensure you have the following installed:
@@ -52,6 +52,11 @@ Ensure you have the following installed:
 
 - Obtain a Weather API key from [WeatherAPI.com](https://www.weatherapi.com).
 - Get an AI API key for clothing suggestions from [Webraft AI](https://discord.gg/webraftai).
+
+## Known Issues
+
+- **Not Fully Responsive**: Some elements may not display correctly on all devices or screen sizes.
+- **Environment Variables Dependency**: If the `.env` file is not set up correctly, the application will not function. An error handling mechanism should be implemented to catch and report these issues effectively.
 
 ## Contact
 
