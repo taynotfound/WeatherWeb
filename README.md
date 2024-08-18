@@ -1,3 +1,5 @@
+## Website is currently down!
+
 # WeatherNotFound
 
 This Weather Dashboard is a comprehensive web application that allows users to look up weather conditions by location, star their favorite locations for quick access, and receive AI-generated clothing suggestions based on the current weather conditions. It utilizes the Weather API from [WeatherAPI.com](https://www.weatherapi.com) and AI services from [Webraft](https://discord.gg/webraftai) to provide tailored clothing recommendations.
