@@ -64,7 +64,7 @@ export default function Home() {
 
   useEffect(() => {
     fetchWeatherData(city);
-  }, []);
+  }, [city]);
 
   const handleSearch = (searchCity: string) => {
     setCity(searchCity);
