@@ -5,8 +5,10 @@ import cities from 'cities.json';
 interface City {
   name: string;
   country: string;
-  lat: number;
-  lng: number;
+  lat: string;
+  lng: string;
+  admin1?: string;
+  admin2?: string;
 }
 
 interface SearchBarProps {
@@ -38,7 +40,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
     setSelectedIndex(-1);
     
     if (value.length > 1) {
-      const filtered = (cities as City[])
+      const filtered = (cities as unknown as City[])
         .filter(city => 
           city.name.toLowerCase().includes(value.toLowerCase()) ||
           city.country.toLowerCase().includes(value.toLowerCase())
