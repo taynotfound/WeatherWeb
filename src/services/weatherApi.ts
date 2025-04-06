@@ -13,8 +13,16 @@ export interface WeatherData {
   icon: string;
   humidity: number;
   windSpeed: number;
+  windGust?: number;
   sunrise: string;
   sunset: string;
+  sunriseTimestamp: number;
+  sunsetTimestamp: number;
+  visibility: number;
+  clouds: number;
+  dt: number;
+  feelsLike: number;
+  airQuality?: number;
 }
 
 export interface ForecastData {
@@ -62,8 +70,16 @@ export const getCurrentWeather = async (city: string): Promise<WeatherData> => {
       icon: data.weather[0].icon,
       humidity: data.main.humidity,
       windSpeed: data.wind.speed,
+      windGust: data.wind.gust,
       sunrise: formatTime(data.sys.sunrise, data.timezone),
       sunset: formatTime(data.sys.sunset, data.timezone),
+      sunriseTimestamp: data.sys.sunrise,
+      sunsetTimestamp: data.sys.sunset,
+      visibility: data.visibility,
+      clouds: data.clouds.all,
+      dt: data.dt,
+      feelsLike: Math.round(data.main.feels_like),
+      airQuality: undefined, // We would need to make a separate API call for air quality data
     };
   } catch (error) {
     console.error('Error fetching current weather:', error);
