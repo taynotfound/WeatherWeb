@@ -16,11 +16,11 @@
 }
 
 body {
-  background: linear-gradient(135deg, var(--background), #2D3A8C);
   background-attachment: fixed;
   min-height: 100vh;
   color: var(--text-primary);
   overflow-x: hidden;
+  transition: all;
 }
 
 .glass {
@@ -93,45 +93,33 @@ body {
   color: var(--primary);
 }
 
-* {
-  transition: color 0.2s, background-color 0.2s;
-  cursor: none;
-}
+
 
 /* Weather animations */
 @keyframes sunny-bg {
-  0% {
+  0%, 100% {
     background: linear-gradient(135deg, #1E1B4B 0%, #2D3A8C 100%);
   }
   50% {
     background: linear-gradient(135deg, #2D3A8C 0%, #4338CA 100%);
   }
-  100% {
-    background: linear-gradient(135deg, #1E1B4B 0%, #2D3A8C 100%);
-  }
 }
 
 @keyframes rainy-bg {
-  0% {
+  0%, 100% {
     background: linear-gradient(135deg, #1E1B4B 0%, #1E293B 100%);
   }
   50% {
     background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
   }
-  100% {
-    background: linear-gradient(135deg, #1E1B4B 0%, #1E293B 100%);
-  }
 }
 
 @keyframes cloudy-bg {
-  0% {
+  0%, 100% {
     background: linear-gradient(135deg, #1E1B4B 0%, #312E81 100%);
   }
   50% {
     background: linear-gradient(135deg, #312E81 0%, #4338CA 100%);
-  }
-  100% {
-    background: linear-gradient(135deg, #1E1B4B 0%, #312E81 100%);
   }
 }
 
@@ -142,19 +130,19 @@ body {
   right: 0;
   bottom: 0;
   z-index: -1;
-  transition: background 1s ease;
+  transition: background 2s ease-in-out;
 }
 
 .weather-bg.sunny {
-  animation: sunny-bg 10s ease infinite;
+  animation: sunny-bg 20s ease-in-out infinite;
 }
 
 .weather-bg.rainy {
-  animation: rainy-bg 10s ease infinite;
+  animation: rainy-bg 20s ease-in-out infinite;
 }
 
 .weather-bg.cloudy {
-  animation: cloudy-bg 10s ease infinite;
+  animation: cloudy-bg 20s ease-in-out infinite;
 }
 
 /* Weather icon animations */

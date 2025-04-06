@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { motion, useAnimationControls } from 'framer-motion';
 
 interface WeatherAnimationProps {
@@ -7,11 +7,7 @@ interface WeatherAnimationProps {
 
 const WeatherAnimation: React.FC<WeatherAnimationProps> = ({ condition }) => {
   const lowerCondition = condition.toLowerCase();
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const controls = useAnimationControls();
-
-
- 
 
   const renderRaindrops = useCallback(() => {
     return Array.from({ length: 50 }).map((_, i) => {
@@ -101,28 +97,6 @@ const WeatherAnimation: React.FC<WeatherAnimationProps> = ({ condition }) => {
   const renderClearSky = useCallback(() => {
     return (
       <>
-        <motion.div
-          style={{
-            position: 'absolute',
-            width: '300px',
-            height: '300px',
-            background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%)',
-            borderRadius: '50%',
-            pointerEvents: 'none',
-          }}
-          animate={{
-            x: mousePosition.x - 150,
-            y: mousePosition.y - 150,
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
-          }}
-          transition={{
-            x: { type: "spring", damping: 20, stiffness: 400 },
-            y: { type: "spring", damping: 20, stiffness: 400 },
-            scale: { duration: 4, repeat: Infinity, ease: 'easeInOut' },
-            opacity: { duration: 4, repeat: Infinity, ease: 'easeInOut' }
-          }}
-        />
         {Array.from({ length: 20 }).map((_, i) => {
           const leftPos = `${Math.random() * 100}%`;
           const topPos = `${Math.random() * 100}%`;
@@ -153,38 +127,24 @@ const WeatherAnimation: React.FC<WeatherAnimationProps> = ({ condition }) => {
         })}
       </>
     );
-  }, [mousePosition]);
+  }, []);
 
   return (
-    <>
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        pointerEvents: 'none',
-        overflow: 'hidden',
-        zIndex: 0
-      }}>
-        {(lowerCondition.includes('rain')) && renderRaindrops()}
-        {(lowerCondition.includes('mist') || lowerCondition.includes('fog')) && renderMist()}
-        {(lowerCondition.includes('overcast')) && renderOvercastClouds()}
-        {(lowerCondition.includes('clear')) && renderClearSky()}
-      </div>
-      <motion.div 
-        className="custom-cursor"
-        animate={{
-          x: mousePosition.x,
-          y: mousePosition.y,
-        }}
-        transition={{
-          type: "spring",
-          damping: 20,
-          stiffness: 400
-        }}
-      />
-    </>
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      pointerEvents: 'none',
+      overflow: 'hidden',
+      zIndex: 0
+    }}>
+      {(lowerCondition.includes('rain')) && renderRaindrops()}
+      {(lowerCondition.includes('mist') || lowerCondition.includes('fog')) && renderMist()}
+      {(lowerCondition.includes('overcast')) && renderOvercastClouds()}
+      {(lowerCondition.includes('clear')) && renderClearSky()}
+    </div>
   );
 };
 

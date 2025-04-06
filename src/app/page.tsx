@@ -77,7 +77,7 @@ export default function Home() {
 
   return (
     <>
-      <div className={`weather-bg ${weatherData ? getWeatherClass(weatherData.condition) : ''}`} />
+      <div className={`${weatherData ? getWeatherClass(weatherData.condition) : ''}`} />
       {weatherData && <WeatherAnimation condition={weatherData.condition} />}
       <main style={{
         minHeight: '100vh',
