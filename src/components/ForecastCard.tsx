@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { FiArrowUp, FiArrowDown } from 'react-icons/fi';
+import Image from 'next/image';
 
 interface ForecastCardProps {
   day: string;
@@ -64,10 +65,12 @@ const ForecastCard: React.FC<ForecastCardProps> = ({
         alignItems: 'center',
         justifyContent: 'center'
       }}>
-        <img
+        <Image
           src={`https://openweathermap.org/img/wn/${icon}.png`}
           alt={condition}
-          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+          width={48}
+          height={48}
+          style={{ objectFit: 'contain' }}
         />
       </div>
 

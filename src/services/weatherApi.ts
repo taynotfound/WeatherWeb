@@ -105,26 +105,30 @@ export const getForecast = async (city: string): Promise<ForecastData[]> => {
     // Get forecasts for each day at noon (closest to 12:00)
     const forecastsByDay = new Map();
     
-    data.list.forEach((item: any) => {
+    data.list.forEach((item: {
+      dt: number;
+      weather: Array<{ icon: string; description: string }>;
+      main: { temp_max: number; temp_min: number };
+    }) => {
       const date = new Date((item.dt + timezone) * 1000);
-      const day = date.toISOString().split('T')[0];
+      const dayKey = date.toISOString().split('T')[0];
       
-      if (!forecastsByDay.has(day)) {
-        forecastsByDay.set(day, item);
+      if (!forecastsByDay.has(dayKey)) {
+        forecastsByDay.set(dayKey, item);
       } else {
-        const existingDate = new Date((forecastsByDay.get(day).dt + timezone) * 1000);
+        const existingDate = new Date((forecastsByDay.get(dayKey).dt + timezone) * 1000);
         const existingHour = existingDate.getHours();
         const currentHour = date.getHours();
         
         // If this forecast is closer to noon, use it instead
         if (Math.abs(12 - currentHour) < Math.abs(12 - existingHour)) {
-          forecastsByDay.set(day, item);
+          forecastsByDay.set(dayKey, item);
         }
       }
     });
     
     // Convert the map to an array of daily forecasts
-    forecastsByDay.forEach((forecast, day) => {
+    forecastsByDay.forEach((forecast) => {
       if (dailyForecasts.length < 5) { // Only include 5 days
         dailyForecasts.push({
           day: formatDay(forecast.dt, timezone),
