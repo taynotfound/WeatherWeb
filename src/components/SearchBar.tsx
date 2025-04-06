@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FiSearch } from 'react-icons/fi';
 import cities from 'cities.json';
-import { motion, AnimatePresence } from 'framer-motion';
 
 interface City {
   name: string;
