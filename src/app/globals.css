@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #4ade80;
+  --secondary: #60a5fa;
+  --accent: #f471b5;
+  --background: #0f172a;
+  --card-bg: rgba(30, 41, 59, 0.7);
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+}
+
+body {
+  background: linear-gradient(to bottom right, var(--background), #020617);
+  background-attachment: fixed;
+  min-height: 100vh;
+  color: var(--text-primary);
+}
+
+.glass {
+  background-color: var(--card-bg);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(71, 85, 105, 0.5);
+  border-radius: 0.75rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  position: relative;
+}
+
+.glass::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.2), transparent);
+}
+
+.glass-input {
+  background-color: rgba(30, 41, 59, 0.4);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(71, 85, 105, 0.4);
+  border-radius: 0.5rem;
+  color: var(--text-primary);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.glass-input:focus {
+  border-color: rgba(74, 222, 128, 0.5);
+  box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.2);
+  outline: none;
+}
+
+.glass-button {
+  background-color: rgba(74, 222, 128, 0.15);
+  backdrop-filter: blur(8px);
+  color: var(--primary);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  border-radius: 0.5rem;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.glass-button:hover {
+  background-color: rgba(74, 222, 128, 0.25);
+  box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.2);
+}
+
+.text-gradient {
+  background-image: linear-gradient(to right, var(--primary), var(--secondary));
+  background-clip: text;
+  color: transparent;
+}
+
+.github-link {
+  transition: color 0.2s;
+}
+
+.github-link:hover {
+  color: var(--primary);
+}
+
+* {
+  transition: color 0.2s, background-color 0.2s;
+}
