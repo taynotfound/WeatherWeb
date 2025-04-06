@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { motion, useAnimationControls } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 interface WeatherAnimationProps {
   condition: string;
@@ -7,7 +7,6 @@ interface WeatherAnimationProps {
 
 const WeatherAnimation: React.FC<WeatherAnimationProps> = ({ condition }) => {
   const lowerCondition = condition.toLowerCase();
-  const controls = useAnimationControls();
 
   const renderRaindrops = useCallback(() => {
     return Array.from({ length: 50 }).map((_, i) => {
