@@ -3,55 +3,64 @@
 @tailwind utilities;
 
 :root {
-  --primary: #4ade80;
-  --secondary: #60a5fa;
-  --accent: #f471b5;
-  --background: #0f172a;
-  --card-bg: rgba(30, 41, 59, 0.7);
-  --text-primary: #f8fafc;
-  --text-secondary: #cbd5e1;
+  --primary: #8B5CF6;
+  --secondary: #7C3AED;
+  --accent: #C084FC;
+  --background: #1E1B4B;
+  --glass-background: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-hover-bg: rgba(255, 255, 255, 0.08);
+  --glass-hover-border: rgba(255, 255, 255, 0.2);
+  --text-primary: rgba(255, 255, 255, 0.95);
+  --text-secondary: rgba(255, 255, 255, 0.7);
 }
 
 body {
-  background: linear-gradient(to bottom right, var(--background), #020617);
+  background: linear-gradient(135deg, var(--background), #2D3A8C);
   background-attachment: fixed;
   min-height: 100vh;
   color: var(--text-primary);
+  overflow-x: hidden;
 }
 
 .glass {
-  background-color: var(--card-bg);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(71, 85, 105, 0.5);
-  border-radius: 0.75rem;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
-  position: relative;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: var(--glass-background);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
 }
 
-.glass::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.2), transparent);
+.glass-hover {
+  transition: all 0.3s ease;
+  background: var(--glass-background);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.glass-hover:hover {
+  background: var(--glass-hover-bg) !important;
+  border-color: var(--glass-hover-border) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
 }
 
 .glass-input {
-  background-color: rgba(30, 41, 59, 0.4);
+  background: var(--glass-background);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(71, 85, 105, 0.4);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--glass-border);
   border-radius: 0.5rem;
   color: var(--text-primary);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: all 0.2s ease;
 }
 
 .glass-input:focus {
-  border-color: rgba(74, 222, 128, 0.5);
-  box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.2);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.2);
   outline: none;
+  background: var(--glass-hover-bg);
 }
 
 .glass-button {
@@ -70,7 +79,8 @@ body {
 }
 
 .text-gradient {
-  background-image: linear-gradient(to right, var(--primary), var(--secondary));
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
@@ -85,4 +95,162 @@ body {
 
 * {
   transition: color 0.2s, background-color 0.2s;
+  cursor: none;
+}
+
+/* Weather animations */
+@keyframes sunny-bg {
+  0% {
+    background: linear-gradient(135deg, #1E1B4B 0%, #2D3A8C 100%);
+  }
+  50% {
+    background: linear-gradient(135deg, #2D3A8C 0%, #4338CA 100%);
+  }
+  100% {
+    background: linear-gradient(135deg, #1E1B4B 0%, #2D3A8C 100%);
+  }
+}
+
+@keyframes rainy-bg {
+  0% {
+    background: linear-gradient(135deg, #1E1B4B 0%, #1E293B 100%);
+  }
+  50% {
+    background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+  }
+  100% {
+    background: linear-gradient(135deg, #1E1B4B 0%, #1E293B 100%);
+  }
+}
+
+@keyframes cloudy-bg {
+  0% {
+    background: linear-gradient(135deg, #1E1B4B 0%, #312E81 100%);
+  }
+  50% {
+    background: linear-gradient(135deg, #312E81 0%, #4338CA 100%);
+  }
+  100% {
+    background: linear-gradient(135deg, #1E1B4B 0%, #312E81 100%);
+  }
+}
+
+.weather-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+  transition: background 1s ease;
+}
+
+.weather-bg.sunny {
+  animation: sunny-bg 10s ease infinite;
+}
+
+.weather-bg.rainy {
+  animation: rainy-bg 10s ease infinite;
+}
+
+.weather-bg.cloudy {
+  animation: cloudy-bg 10s ease infinite;
+}
+
+/* Weather icon animations */
+.weather-animation {
+  position: relative;
+  transition: transform 0.3s ease;
+}
+
+.weather-animation:hover {
+  transform: scale(1.05);
+}
+
+.weather-animation.sunny img {
+  animation: rotate 20s linear infinite;
+}
+
+.weather-animation.rainy::before {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 10px;
+  background: linear-gradient(var(--text-primary), transparent);
+  animation: rain 1s linear infinite;
+}
+
+.weather-animation.cloudy img {
+  animation: float 4s ease-in-out infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes rain {
+  0% { transform: translateY(-10px); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translateY(30px); opacity: 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Custom Cursor */
+.custom-cursor {
+  width: 20px;
+  height: 20px;
+  background: rgba(255, 215, 0, 0.3);
+  border-radius: 50%;
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: difference;
+  transition: transform 0.2s ease;
+  transform: translate(-50%, -50%);
+  box-shadow: 
+    0 0 10px rgba(255, 215, 0, 0.5),
+    0 0 20px rgba(255, 215, 0, 0.3),
+    0 0 30px rgba(255, 215, 0, 0.2);
+}
+
+.custom-cursor.active {
+  transform: translate(-50%, -50%) scale(1.5);
+}
+
+/* Ensure clickable elements show they're interactive */
+a, button, input, [role="button"], .clickable {
+  cursor: none;
+}
+
+a:hover ~ .custom-cursor,
+button:hover ~ .custom-cursor,
+input:hover ~ .custom-cursor,
+[role="button"]:hover ~ .custom-cursor,
+.clickable:hover ~ .custom-cursor {
+  transform: translate(-50%, -50%) scale(1.5);
+  background: rgba(255, 215, 0, 0.5);
 }
