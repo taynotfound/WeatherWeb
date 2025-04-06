@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { motion, useAnimationControls } from 'framer-motion';
 
 interface WeatherAnimationProps {
