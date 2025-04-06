@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { FiDroplet, FiWind, FiSunrise, FiSunset } from 'react-icons/fi';
 import ReactCountryFlag from 'react-country-flag';
+import Image from 'next/image';
 import WeatherDetails from './WeatherDetails';
 
 interface WeatherCardProps {
@@ -139,10 +140,12 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
           margin: '1.5rem 0',
           position: 'relative'
         }}>
-          <img 
-            src={`https://openweathermap.org/img/wn/${icon}@4x.png`} 
+          <Image
+            src={`https://openweathermap.org/img/wn/${icon}@4x.png`}
             alt={condition}
-            style={{ width: '7rem', height: '7rem', objectFit: 'contain' }}
+            width={112}
+            height={112}
+            style={{ objectFit: 'contain' }}
           />
         </div>
         
