@@ -66,7 +66,7 @@ yarn dev
 - [Framer Motion](https://www.framer.com/motion/) - Animations
 - [React Icons](https://react-icons.github.io/react-icons/) - Icons
 - [Axios](https://axios-http.com/) - API requests
-- [OpenWeatherMap API](https://openweathermap.org/api) - Weather data
+- For the API's see [weather.taymaerz.de/about](https://weather.taymaerz.de/about)
 
 ## License
 
