@@ -14,7 +14,8 @@ A modern weather application with a beautiful glassmorphic dark mode UI built wi
 
 ## Screenshots
 
-[Add screenshots here after running the app]
+![image](https://github.com/user-attachments/assets/83808267-a7d8-4b25-8a9e-fdc8b63a5465)
+
 
 ## Getting Started
 
@@ -29,7 +30,7 @@ A modern weather application with a beautiful glassmorphic dark mode UI built wi
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/weatherweb.git
+git clone https://github.com/taynotfound/weatherweb.git
 cd weatherweb
 ```
 
