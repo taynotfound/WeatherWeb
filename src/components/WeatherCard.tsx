@@ -50,6 +50,10 @@ interface WeatherCardProps {
     lowestChance: { time: string; probability: number };
     nextRain?: { time: string; probability: number };
   };
+  currentTime: number;
+  timezone: number;
+  tempMin: number;
+  tempMax: number;
 }
 
 const WeatherCard: React.FC<WeatherCardProps> = ({
@@ -79,6 +83,10 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
   lat,
   lon,
   precipitationForecast,
+  currentTime,
+  timezone,
+  tempMin,
+  tempMax,
 }) => {
   const { updateWeather } = useWeather();
 
@@ -139,262 +147,185 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
     });
   };
 
+  const formatTimeWithTimezone = (timestamp: number, timezone: number) => {
+    return new Date((timestamp + timezone) * 1000).toLocaleTimeString(undefined, {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZoneName: 'short'
+    });
+  };
+
+  const formatTimezone = (timezone: number) => {
+    const hours = timezone / 3600;
+    const sign = hours >= 0 ? '+' : '-';
+    return `GMT${sign}${Math.abs(hours)}`;
+  };
+
   return (
-    <div style={{ width: '100%' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+    <div className="weather-card">
+      <div className="weather-card-container">
         <motion.div 
-          className="glass"
-          style={{
-            padding: '2rem',
-            borderRadius: '1rem',
-            width: '100%',
-            position: 'relative',
-            overflow: 'hidden'
-          }}
+          className="weather-card-content glass"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-            <div style={{ textAlign: 'left' }}>
-              <h2 style={{ 
-                fontSize: '1.5rem', 
-                fontWeight: 'bold', 
-                color: 'var(--text-primary)', 
-                marginBottom: '0.5rem' 
-              }}>{city}</h2>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <ReactCountryFlag countryCode={country} svg style={{ fontSize: '1.5em' }} />
-                <p style={{ color: 'var(--text-secondary)' }}>{country}</p>
+          <div className="weather-card-header">
+            <div className="weather-card-location">
+              <h2 className="weather-card-city">{city}</h2>
+              <div className="weather-card-country">
+                <ReactCountryFlag countryCode={country} svg />
+                <p>{country}</p>
               </div>
             </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.5rem'
-                }}>
-                  <div style={{ 
-                    fontSize: '4rem',
-                    fontWeight: 'bold',
-                    color: 'var(--text-primary)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem'
-                  }}>
-                    {temperature}°
-                    <div style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '0.25rem',
-                      marginLeft: '0.5rem'
-                    }}>
-                      <button
-                        onClick={() => onUnitChange('C')}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          padding: '0.25rem 0.5rem',
-                          fontSize: '1rem',
-                          cursor: 'pointer',
-                          color: unit === 'C' ? 'var(--primary)' : 'var(--text-secondary)',
-                          fontWeight: unit === 'C' ? 'bold' : 'normal'
-                        }}
-                      >
-                        °C
-                      </button>
-                      <button
-                        onClick={() => onUnitChange('F')}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          padding: '0.25rem 0.5rem',
-                          fontSize: '1rem',
-                          cursor: 'pointer',
-                          color: unit === 'F' ? 'var(--primary)' : 'var(--text-secondary)',
-                          fontWeight: unit === 'F' ? 'bold' : 'normal'
-                        }}
-                      >
-                        °F
-                      </button>
-                    </div>
+            <div className="weather-card-temperature">
+              <div className="temperature-display">
+                <div className="temperature-value">
+                  {temperature}°
+                  <div className="temperature-units">
+                    <button
+                      onClick={() => onUnitChange('C')}
+                      className={`unit-button ${unit === 'C' ? 'active' : ''}`}
+                    >
+                      °C
+                    </button>
+                    <button
+                      onClick={() => onUnitChange('F')}
+                      className={`unit-button ${unit === 'F' ? 'active' : ''}`}
+                    >
+                      °F
+                    </button>
                   </div>
                 </div>
-                <div style={{ 
-                  color: 'var(--text-secondary)',
-                  fontSize: '1.25rem',
-                  marginTop: '0.5rem',
-                  textTransform: 'capitalize'
-                }}>
-                  {condition}
-                </div>
               </div>
+              <div className="weather-condition">{condition}</div>
             </div>
           </div>
           
-          <div style={{ 
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1.5rem',
-            marginTop: '2rem'
-          }}>
-            <div style={{ 
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '1.5rem'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <FiSunrise style={{ color: 'var(--primary)', flexShrink: 0 }} size={24} />
+          <div className="weather-details">
+            <div className="weather-details-row">
+              <div className="weather-detail-item">
+                <FiSunrise className="weather-icon" />
                 <div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Sunrise</div>
-                  <div style={{ color: 'var(--text-primary)' }}>{sunrise}</div>
+                  <div className="weather-detail-label">Sunrise</div>
+                  <div className="weather-detail-value">{sunrise}</div>
                 </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <FiSunset style={{ color: 'var(--accent)', flexShrink: 0 }} size={24} />
+              <div className="weather-detail-item">
+                <FiSunset className="weather-icon" />
                 <div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Sunset</div>
-                  <div style={{ color: 'var(--text-primary)' }}>{sunset}</div>
+                  <div className="weather-detail-label">Sunset</div>
+                  <div className="weather-detail-value">{sunset}</div>
                 </div>
               </div>
-            </div>
-
-            {precipitation && (precipitation.total > 0 || precipitation.probability > 0) && (
-              <div style={{ 
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: '1.5rem',
-                padding: '1rem',
-                background: 'rgba(0,0,0,0.1)',
-                borderRadius: '0.75rem'
-              }}>
+              <div className="weather-detail-item">
+                <FiDroplet className="weather-icon" />
                 <div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Precipitation</div>
-                  <div style={{ color: 'var(--text-primary)', fontSize: '1.25rem', fontWeight: 500 }}>
-                    {Math.round(precipitation.probability * 100)}%
-                  </div>
+                  <div className="weather-detail-label">Humidity</div>
+                  <div className="weather-detail-value">{humidity}%</div>
                 </div>
-                {precipitation.total > 0 && (
+              </div>
+              <div className="weather-detail-item">
+                <FiWind className="weather-icon" />
+                <div>
+                  <div className="weather-detail-label">Wind Speed</div>
+                  <div className="weather-detail-value">{windSpeed} m/s</div>
+                </div>
+              </div>
+              {precipitation && precipitation.total > 0 && (
+                <div className="weather-detail-item">
+                  <FiTrendingUp className="weather-icon" />
                   <div>
-                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Amount</div>
-                    <div style={{ color: 'var(--text-primary)', fontSize: '1.25rem', fontWeight: 500 }}>
-                      {precipitation.total.toFixed(1)}mm
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {pressure && (
-              <div style={{ 
-                display: 'flex',
-                alignItems: 'center',
-                gap: '1rem',
-                padding: '1rem',
-                background: 'rgba(0,0,0,0.1)',
-                borderRadius: '0.75rem'
-              }}>
-                <div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Pressure</div>
-                  <div style={{ color: 'var(--text-primary)', fontSize: '1.25rem', fontWeight: 500 }}>
-                    {pressure} hPa
+                    <div className="weather-detail-label">Precipitation</div>
+                    <div className="weather-detail-value">{precipitation.total} mm</div>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
-          { /* Last Update Section */}
-            <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '1rem', 
-                marginTop: '2rem' 
-            }}>
-                <FiClock style={{ color: 'var(--text-secondary)' }} size={24} />
+              )}
+              {precipitation && precipitation.probability > 0 && (
+                <div className="weather-detail-item">
+                  <FiClock className="weather-icon" />
+                  <div>
+                    <div className="weather-detail-label">Probability</div>
+                    <div className="weather-detail-value">{precipitation.probability}%</div>
+                  </div>
+                </div>
+              )}
+              {pressure && (
+                <div className="weather-detail-item">
+                  <FiTrendingDown className="weather-icon" />
+                  <div>
+                    <div className="weather-detail-label">Pressure</div>
+                    <div className="weather-detail-value">{pressure} hPa</div>
+                  </div>
+                </div>
+              )}
+              <div className="weather-detail-item">
+                <FiClock className="weather-icon" />
                 <div>
-                <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Last Update</div>
-                <div style={{ color: 'var(--text-primary)' }}>
-                    {new Date(lastUpdate * 1000).toLocaleString(undefined, {
-                    dateStyle: 'short',
-                    timeStyle: 'short'
-                    })}
+                  <div className="weather-detail-label">Current Time</div>
+                  <div className="weather-detail-value">{formatTimeWithTimezone(currentTime, timezone)}</div>
                 </div>
+              </div>
+              <div className="weather-detail-item">
+                <FiClock className="weather-icon" />
+                <div>
+                  <div className="weather-detail-label">Timezone</div>
+                  <div className="weather-detail-value">{formatTimezone(timezone)}</div>
                 </div>
+              </div>
+              <div className="weather-detail-item">
+                <FiTrendingDown className="weather-icon" />
+                <div>
+                  <div className="weather-detail-label">Min Temperature</div>
+                  <div className="weather-detail-value">{tempMin}°</div>
+                </div>
+              </div>
+              <div className="weather-detail-item">
+                <FiTrendingUp className="weather-icon" />
+                <div>
+                  <div className="weather-detail-label">Max Temperature</div>
+                  <div className="weather-detail-value">{tempMax}°</div>
+                </div>
+              </div>
             </div>
+          </div>
         </motion.div>
-
-      
 
         {/* Precipitation Forecast Section */}
         {precipitationForecast && (
           <motion.div
-            className="glass"
+            className="glass p-6 rounded-2xl mt-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            style={{
-              padding: '2rem',
-              borderRadius: '0.75rem',
-              width: '100%'
-            }}
           >
-            <h3 style={{ 
-              fontSize: '1rem', 
-              fontWeight: 500, 
-              color: 'var(--text-primary)',
-              marginBottom: '1rem'
-            }}>
-              Precipitation Forecast
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <h3 className="text-lg font-bold text-text-primary mb-4">Precipitation Forecast</h3>
+            <div className="flex flex-col gap-4">
               {precipitationForecast.nextRain && (
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '0.75rem',
-                  padding: '0.75rem',
-                  background: 'rgba(0,0,0,0.1)',
-                  borderRadius: '0.5rem'
-                }}>
-                  <FiDroplet size={20} style={{ color: 'var(--primary)' }} />
+                <div className="flex items-center gap-4 p-4 glass-hover rounded-lg">
+                  <FiDroplet size={20} className="text-primary" />
                   <div>
-                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Next Rain</div>
-                    <div style={{ color: 'var(--text-primary)' }}>
+                    <div className="text-text-secondary text-sm">Next Rain</div>
+                    <div className="text-text-primary">
                       {precipitationForecast.nextRain.time} ({Math.round(precipitationForecast.nextRain.probability * 100)}%)
                     </div>
                   </div>
                 </div>
               )}
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '0.75rem',
-                padding: '0.75rem',
-                background: 'rgba(0,0,0,0.1)',
-                borderRadius: '0.5rem'
-              }}>
-                <FiTrendingDown size={20} style={{ color: 'var(--accent)' }} />
+              <div className="flex items-center gap-4 p-4 glass-hover rounded-lg">
+                <FiTrendingDown size={20} className="text-accent" />
                 <div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Lowest Chance</div>
-                  <div style={{ color: 'var(--text-primary)' }}>
+                  <div className="text-text-secondary text-sm">Lowest Chance</div>
+                  <div className="text-text-primary">
                     {precipitationForecast.lowestChance.time} ({Math.round(precipitationForecast.lowestChance.probability * 100)}%)
                   </div>
                 </div>
               </div>
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '0.75rem',
-                padding: '0.75rem',
-                background: 'rgba(0,0,0,0.1)',
-                borderRadius: '0.5rem'
-              }}>
-                <FiTrendingUp size={20} style={{ color: 'var(--primary)' }} />
+              <div className="flex items-center gap-4 p-4 glass-hover rounded-lg">
+                <FiTrendingUp size={20} className="text-primary" />
                 <div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Highest Chance</div>
-                  <div style={{ color: 'var(--text-primary)' }}>
+                  <div className="text-text-secondary text-sm">Highest Chance</div>
+                  <div className="text-text-primary">
                     {precipitationForecast.highestChance.time} ({Math.round(precipitationForecast.highestChance.probability * 100)}%)
                   </div>
                 </div>

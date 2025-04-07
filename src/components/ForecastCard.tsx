@@ -34,79 +34,39 @@ const ForecastCard: React.FC<ForecastCardProps> = ({
 
   return (
     <motion.div
-      className="glass glass-hover"
-      style={{
-        padding: '1rem',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        borderRadius: '1rem',
-        minWidth: '140px',
-      }}
+      className="glass glass-hover p-4 flex flex-col items-center rounded-2xl min-w-[140px]"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: index * 0.1 }}
     >
-      <h3 style={{ 
-        color: 'var(--text-primary)',
-        fontWeight: 500,
-        marginBottom: '0.5rem',
-        fontSize: '1rem'
-      }}>
+      <h3 className="text-text-primary font-medium mb-2 text-base">
         {day}
       </h3>
       
-      <div className={`weather-animation ${getWeatherClass(condition)}`} style={{ 
-        margin: '0.5rem 0',
-        position: 'relative',
-        width: '3rem',
-        height: '3rem',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
+      <div className={`weather-animation ${getWeatherClass(condition)} my-2 relative w-12 h-12 flex items-center justify-center`}>
         <Image
           src={`https://openweathermap.org/img/wn/${icon}.png`}
           alt={condition}
           width={48}
           height={48}
-          style={{ objectFit: 'contain' }}
+          className="object-contain"
         />
       </div>
 
-      <p style={{ 
-        color: 'var(--text-secondary)',
-        fontSize: '0.75rem',
-        textTransform: 'capitalize',
-        textAlign: 'center',
-        marginBottom: '0.5rem',
-        minHeight: '2rem'
-      }}>
+      <p className="text-text-secondary text-xs capitalize text-center mb-2 min-h-8">
         {condition}
       </p>
 
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '1rem',
-        marginTop: '0.5rem'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-          <FiArrowUp style={{ color: 'var(--primary)' }} />
-          <span style={{ 
-            color: 'var(--text-primary)',
-            fontWeight: 'bold',
-            fontSize: '0.875rem'
-          }}>
+      <div className="flex items-center gap-4 mt-2">
+        <div className="flex items-center gap-1">
+          <FiArrowUp className="text-primary" />
+          <span className="text-text-primary font-bold text-sm">
             {tempMax}°{unit}
           </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-          <FiArrowDown style={{ color: 'var(--accent)' }} />
-          <span style={{ 
-            color: 'var(--text-secondary)',
-            fontSize: '0.875rem'
-          }}>
+        <div className="flex items-center gap-1">
+          <FiArrowDown className="text-accent" />
+          <span className="text-text-secondary text-sm">
             {tempMin}°{unit}
           </span>
         </div>

@@ -129,196 +129,128 @@ const WeatherDetails: React.FC<WeatherDetailsProps> = ({
   return (
     <>
       <motion.div
-        className="glass"
+        className="weather-details-container glass"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
-        style={{
-          padding: '2rem',
-          borderRadius: '1rem',
-          width: '100%'
-        }}
       >
-        <div className="weather-details-grid" style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-          gap: '1rem'
-        }}>
+        <div className="weather-details-grid">
           <motion.div
-            className="glass-hover"
+            className="weather-detail-card glass-hover"
             whileHover={{ scale: 1.02 }}
-            style={{
-              padding: '1.5rem',
-              borderRadius: '0.75rem',
-            }}
           >
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              marginBottom: '0.5rem',
-              color: 'var(--text-secondary)'
-            }}>
-              <FiThermometer size={20} />
-              <span>Feels Like</span>
+            <div className="weather-detail-header">
+              <FiThermometer className="weather-detail-icon" />
+              <span className="weather-detail-label">Feels Like</span>
             </div>
-            <div style={{
-              fontSize: '1.5rem',
-              fontWeight: 500,
-              color: 'var(--text-primary)'
-            }}>
+            <div className="weather-detail-value">
               {feelsLike}°{unit}
             </div>
           </motion.div>
 
           <motion.div
-            className="glass-hover"
+            className="weather-detail-card glass-hover"
             whileHover={{ scale: 1.02 }}
-            style={{
-              padding: '1.5rem',
-              borderRadius: '0.75rem',
-            }}
           >
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              marginBottom: '0.5rem',
-              color: 'var(--text-secondary)'
-            }}>
-              <FiWind size={20} />
-              <span>Wind</span>
+            <div className="weather-detail-header">
+              <FiWind className="weather-detail-icon" />
+              <span className="weather-detail-label">Wind</span>
             </div>
-            <div style={{
-              fontSize: '1.5rem',
-              fontWeight: 500,
-              color: 'var(--text-primary)'
-            }}>
+            <div className="weather-detail-value">
               {windSpeed.toFixed(1)} m/s
             </div>
             {windGust && (
-              <div style={{
-                fontSize: '0.875rem',
-                color: 'var(--text-secondary)',
-                marginTop: '0.25rem'
-              }}>
-                Gusts: {windGust.toFixed(1)} m/s
+              <div className="weather-detail-subtext">
+                Gust: {windGust.toFixed(1)} m/s
               </div>
             )}
           </motion.div>
 
           <motion.div
-            className="glass-hover"
+            className="weather-detail-card glass-hover"
             whileHover={{ scale: 1.02 }}
-            style={{
-              padding: '1.5rem',
-              borderRadius: '0.75rem',
-            }}
           >
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              marginBottom: '0.5rem',
-              color: 'var(--text-secondary)'
-            }}>
-              <FiDroplet size={20} />
-              <span>Humidity</span>
+            <div className="weather-detail-header">
+              <FiDroplet className="weather-detail-icon" />
+              <span className="weather-detail-label">Humidity</span>
             </div>
-            <div style={{
-              fontSize: '1.5rem',
-              fontWeight: 500,
-              color: 'var(--text-primary)'
-            }}>
+            <div className="weather-detail-value">
               {humidity}%
             </div>
           </motion.div>
 
           <motion.div
-            className="glass-hover"
+            className="weather-detail-card glass-hover"
             whileHover={{ scale: 1.02 }}
-            style={{
-              padding: '1.5rem',
-              borderRadius: '0.75rem',
-            }}
           >
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              marginBottom: '0.5rem',
-              color: 'var(--text-secondary)'
-            }}>
-              <FiEye size={20} />
-              <span>Visibility</span>
+            <div className="weather-detail-header">
+              <FiEye className="weather-detail-icon" />
+              <span className="weather-detail-label">Visibility</span>
             </div>
-            <div style={{
-              fontSize: '1.5rem',
-              fontWeight: 500,
-              color: 'var(--text-primary)'
-            }}>
+            <div className="weather-detail-value">
               {formatVisibility(visibility)}
             </div>
           </motion.div>
 
           <motion.div
-            className="glass-hover"
+            className="weather-detail-card glass-hover"
             whileHover={{ scale: 1.02 }}
-            style={{
-              padding: '1.5rem',
-              borderRadius: '0.75rem',
-            }}
           >
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              marginBottom: '0.5rem',
-              color: 'var(--text-secondary)'
-            }}>
-              <FiCloud size={20} />
-              <span>Cloud Cover</span>
+            <div className="weather-detail-header">
+              <FiCloud className="weather-detail-icon" />
+              <span className="weather-detail-label">Clouds</span>
             </div>
-            <div style={{
-              fontSize: '1.5rem',
-              fontWeight: 500,
-              color: 'var(--text-primary)'
-            }}>
+            <div className="weather-detail-value">
               {clouds}%
             </div>
           </motion.div>
 
-          {airQuality && (
+          {pressure && (
             <motion.div
-              className="glass-hover"
+              className="weather-detail-card glass-hover"
               whileHover={{ scale: 1.02 }}
-              style={{
-                padding: '1.5rem',
-                borderRadius: '0.75rem',
-              }}
             >
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                marginBottom: '0.5rem',
-                color: 'var(--text-secondary)'
-              }}>
-                <MdAir size={20} />
-                <span>Air Quality</span>
+              <div className="weather-detail-header">
+                <MdAir className="weather-detail-icon" />
+                <span className="weather-detail-label">Pressure</span>
               </div>
-              <div style={{
-                fontSize: '1.5rem',
-                fontWeight: 500,
-                color: 'var(--text-primary)'
-              }}>
-                {getAirQualityLabel(airQuality)}
+              <div className="weather-detail-value">
+                {pressure} hPa
               </div>
             </motion.div>
           )}
-        </div>
-      </motion.div>
 
+          {airQuality && (
+            <motion.div
+              className="weather-detail-card glass-hover"
+              whileHover={{ scale: 1.02 }}
+            >
+              <div className="weather-detail-header">
+                <FiThermometer className="weather-detail-icon" />
+                <span className="weather-detail-label">Air Quality</span>
+              </div>
+              <div className="weather-detail-value">
+                {airQuality} - {getAirQualityLabel(airQuality)}
+              </div>
+            </motion.div>
+          )}
+
+          <motion.div
+            className="weather-detail-card glass-hover"
+            whileHover={{ scale: 1.02 }}
+          >
+            <div className="weather-detail-header">
+              <FiClock className="weather-detail-icon" />
+              <span className="weather-detail-label">Last Update</span>
+            </div>
+            <div className="weather-detail-value">
+              {formatTime(lastUpdate)}
+            </div>
+          </motion.div>
+        </div>
+
+        
+      </motion.div>
       <motion.div
         className="glass"
         initial={{ opacity: 0, y: 20 }}

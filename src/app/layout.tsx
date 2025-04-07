@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import WeatherProvider from "@/components/WeatherProvider";
 
+
 const inter = Inter({ subsets: ["latin"], variable: '--font-inter' });
 
 export const metadata: Metadata = {
@@ -17,6 +18,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+      <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+      </head>
       <body className={inter.className}>
         <WeatherProvider>
           {children}

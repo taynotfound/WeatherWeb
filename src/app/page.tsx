@@ -113,71 +113,42 @@ export default function Home() {
           isDay={isDay(weather.sunriseTimestamp, weather.sunsetTimestamp)} 
         />
       )}
-      <main style={{
-        minHeight: '100vh',
-        padding: '2.5rem 1rem',
-        maxWidth: '64rem',
-        margin: '0 auto',
-        position: 'relative',
-        zIndex: 1,
-      }}>
+      <main className="min-h-screen px-4 py-10 max-w-[90%] mx-auto relative z-10">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            marginBottom: '2.5rem'
-          }}
+          className="flex flex-col items-center mb-10"
         >
-          <h1 className="text-gradient" style={{
-            fontSize: '3rem',
-            fontWeight: 'bold',
-            marginBottom: '0.5rem',
-            textAlign: 'center'
-          }}>
+          <h1 className="mt-6 text-gradient text-5xl font-bold mb-2 text-center">
             WeatherWeb
           </h1>
-          <p style={{ color: 'var(--text-secondary)', textAlign: 'center' }}>
+          <p className="text-text-secondary text-center">
             A modern glassmorphic weather application
           </p>
         </motion.div>
 
-        <div style={{ 
-          maxWidth: '28rem',
-          margin: '0 auto auto',
-          width: '100%'
-        }}>
+        <div className="mt-12 max-w-[40rem] w-full mx-auto">
           <SearchBar onCitySelect={handleCitySelect} />
         </div>
         
         {loading && (
           <div className="text-center mt-8">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-            <p className="mt-2">Loading weather data...</p>
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+            <p className="mt-2 text-text-secondary">Loading weather data...</p>
           </div>
         )}
 
         {error && !weather && (
-          <div className="mt-8 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+          <div className="mt-8 p-4 bg-red-500/10 border border-red-500/20 text-red-500 rounded-lg">
             <p>{error}</p>
           </div>
         )}
 
         {weather && !loading && (
           <>
-            <div style={{ 
-              margin: '2.5rem auto 0 auto',
-              maxWidth: '36rem',
-              width: '95%',
-              position: 'relative',}}>
-              <div style={{ 
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '2rem'
-              }}>
+            <div className="mt-10 mx-auto max-w-[80rem] w-[95%] relative">
+              <div className="flex flex-col gap-12">
                 <WeatherCard
                   city={weather.city}
                   country={weather.country}
@@ -202,6 +173,10 @@ export default function Home() {
                   lon={weather.lon}
                   precipitation={weather.precipitation}
                   precipitationForecast={weather.precipitationForecast}
+                  currentTime={weather.currentTime}
+                  timezone={weather.timezone}
+                  tempMin={getTemperatureInUnit(weather.tempMin)}
+                  tempMax={getTemperatureInUnit(weather.tempMax)}
                 />
                 
                 <WeatherDetails
@@ -221,26 +196,16 @@ export default function Home() {
                   airPollutants={weather.airPollutants}
                   lat={weather.lat}
                   lon={weather.lon}
+              
                   unit={unit}
                   onUnitChange={handleUnitChange}
                 />
 
-                <div>
-                  <h2 style={{ 
-                    color: 'var(--text-primary)',
-                    fontSize: '1.25rem',
-                    fontWeight: 600,
-                    marginBottom: '1.5rem',
-                    textAlign: 'center'
-                  }}>
+                <div className="mt-4">
+                  <h2 className="text-text-primary text-xl font-semibold mb-8 text-center">
                     5-Day Forecast
                   </h2>
-                  <div className="forecast-container" style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-                    gap: '1rem',
-                    width: '100%'
-                  }}>
+                  <div className="forecast-container">
                     {forecast.map((forecast, index) => (
                       <ForecastCard
                         key={index}
@@ -260,25 +225,10 @@ export default function Home() {
           </>
         )}
 
-<footer style={{
-          marginTop: '4rem',
-          textAlign: 'center',
-          fontSize: '0.875rem',
-          color: 'var(--text-secondary)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '1rem'
-        }}>
+        <footer className="mt-16 text-center text-sm text-text-secondary flex flex-col items-center gap-4">
           <Link
             href="/about"
-            className="glass-hover"
-            style={{
-              padding: '0.5rem 1rem',
-              borderRadius: '0.5rem',
-              color: 'var(--text-primary)',
-              textDecoration: 'none'
-            }}
+            className="glass glass-hover px-6 py-3 rounded-lg text-text-primary no-underline transition-all duration-200 hover:scale-105"
           >
             About WeatherWeb
           </Link>
@@ -286,14 +236,7 @@ export default function Home() {
             href="https://github.com/taygotfound/weatherweb"
             target="_blank"
             rel="noopener noreferrer"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem',
-              color: 'var(--text-secondary)'
-            }}
-            className="github-link"
+            className="glass glass-hover px-6 py-3 rounded-lg text-text-primary no-underline flex items-center justify-center gap-2 transition-all duration-200 hover:scale-105"
           >
             <FiGithub size={16} />
             View on GitHub

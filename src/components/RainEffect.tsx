@@ -15,7 +15,7 @@ const RainEffect: React.FC<RainEffectProps> = ({ isRaining }) => {
   useEffect(() => {
     if (isRaining) {
       // Create 100 raindrops with random positions and timing
-      const drops = Array.from({ length: 100 }, (_, i) => ({
+      const drops = Array.from({ length: 20 }, (_, i) => ({
         id: i,
         left: Math.random() * 120 - 10, // Spawn slightly outside the screen for a more natural effect
         duration: 0.8 + Math.random() * 0.6, // Duration between 0.8s and 1.4s

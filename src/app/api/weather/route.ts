@@ -112,7 +112,11 @@ export async function GET(request: Request) {
       precipitation,
       precipitationForecast,
       lat: weatherData.coord.lat,
-      lon: weatherData.coord.lon
+      lon: weatherData.coord.lon,
+      currentTime: weatherData.dt,
+      timezone: weatherData.timezone,
+      tempMin: weatherData.main.temp_min,
+      tempMax: weatherData.main.temp_max
     };
 
     return NextResponse.json(formattedResponse);

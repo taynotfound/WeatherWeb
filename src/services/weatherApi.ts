@@ -48,6 +48,10 @@ export interface WeatherData {
     highestChance: { time: string; probability: number };
     lowestChance: { time: string; probability: number };
   };
+  currentTime: number;
+  timezone: number;
+  tempMin: number;
+  tempMax: number;
 }
 
 export interface ForecastData {
