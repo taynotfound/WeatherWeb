@@ -147,8 +147,10 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
     });
   };
 
-  const formatTimeWithTimezone = (timestamp: number, timezone: number) => {
-    return new Date((timestamp + timezone) * 1000).toLocaleTimeString(undefined, {
+  const formatTimeWithTimezone = (timezone: number) => {
+    const currentGMTTime = new Date().getTime();
+    const adjustedTime = new Date(currentGMTTime + timezone * 1000);
+    return adjustedTime.toLocaleTimeString(undefined, {
       hour: '2-digit',
       minute: '2-digit',
       timeZoneName: 'short'
@@ -259,13 +261,7 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
                   </div>
                 </div>
               )}
-              <div className="weather-detail-item">
-                <FiClock className="weather-icon" />
-                <div>
-                  <div className="weather-detail-label">Current Time</div>
-                  <div className="weather-detail-value">{formatTimeWithTimezone(currentTime, timezone)}</div>
-                </div>
-              </div>
+
               <div className="weather-detail-item">
                 <FiClock className="weather-icon" />
                 <div>
