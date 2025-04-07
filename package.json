@@ -9,14 +9,17 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@types/leaflet": "^1.9.17",
     "axios": "^1.8.4",
     "cities.json": "^1.1.49",
     "framer-motion": "^12.6.3",
+    "leaflet": "^1.9.4",
     "next": "15.2.4",
     "react": "^19.0.0",
     "react-country-flag": "^3.1.0",
     "react-dom": "^19.0.0",
-    "react-icons": "^5.5.0"
+    "react-icons": "^5.5.0",
+    "react-leaflet": "^5.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

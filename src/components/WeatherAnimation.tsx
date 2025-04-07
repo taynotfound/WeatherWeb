@@ -1,148 +1,117 @@
-import React, { useCallback } from 'react';
+'use client';
+
+import React from 'react';
 import { motion } from 'framer-motion';
+import styles from './WeatherAnimation.module.css';
+import type { WeatherCondition } from './WeatherProvider';
 
 interface WeatherAnimationProps {
-  condition: string;
+  conditions?: WeatherCondition[];
+  isDay: boolean;
 }
 
-const WeatherAnimation: React.FC<WeatherAnimationProps> = ({ condition }) => {
-  const lowerCondition = condition.toLowerCase();
+const WeatherAnimation: React.FC<WeatherAnimationProps> = ({ 
+  conditions = [], 
+  isDay 
+}) => {
+  const renderParticles = (condition: WeatherCondition) => {
+    const baseCount = condition.probability 
+      ? Math.floor(condition.probability * 150)
+      : condition.intensity === 'light' ? 25 
+        : condition.intensity === 'moderate' ? 50 
+        : 75;
 
-  const renderRaindrops = useCallback(() => {
-    return Array.from({ length: 50 }).map((_, i) => {
-      const duration = 1 + Math.random();
-      const delay = Math.random() * 2;
-      const leftPos = `${Math.random() * 100}%`;
+    const count = condition.probability && condition.probability > 0.05
+      ? Math.max(10, Math.min(baseCount, 100))
+      : baseCount;
+
+    return Array.from({ length: count }).map((_, i) => {
+      const delay = Math.random() * 3;
       
+      const speedFactor = condition.probability 
+        ? 1 + condition.probability
+        : condition.intensity === 'heavy' ? 2 
+          : condition.intensity === 'moderate' ? 1.5 
+          : 1;
+      
+      const duration = condition.type === 'snow' 
+        ? 6 + Math.random() * 4
+        : condition.type === 'rain'
+          ? (0.9 + Math.random() * 0.4) / speedFactor
+          : 2 + Math.random() * 2;
+
+      const maxOpacity = condition.probability 
+        ? Math.min(0.8, 0.4 + condition.probability * 0.6)
+        : condition.intensity === 'heavy' ? 0.8
+          : condition.intensity === 'moderate' ? 0.6
+          : 0.4;
+
+      const scale = condition.probability
+        ? 0.8 + (condition.probability * 0.4)
+        : condition.intensity === 'heavy' ? 1.2
+          : condition.intensity === 'moderate' ? 1
+          : 0.8;
+
       return (
         <motion.div
-          key={`raindrop-${i}`}
-          style={{
-            position: 'absolute',
-            width: '2px',
-            height: `${Math.random() * 15 + 10}px`,
-            background: 'linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.1) 100%)',
-            borderRadius: '2px',
-            left: leftPos,
-            top: '-20px',
+          key={`${condition.type}-${i}`}
+          className={`${styles.particle} ${styles[condition.type]}`}
+          initial={{
+            opacity: 0,
+            x: `${Math.random() * 100}%`,
+            y: '-10%',
+            scale,
           }}
           animate={{
-            y: ['0%', '2000%'],
-            opacity: [0, 0.5, 0]
+            opacity: [0, maxOpacity, maxOpacity, 0],
+            x: `${Math.random() * 100}%`,
+            y: ['-10%', '110%'],
+            scale,
           }}
           transition={{
             duration,
-            repeat: Infinity,
             delay,
-            ease: 'linear'
+            repeat: Infinity,
+            ease: condition.type === 'snow' ? 'easeInOut' : 'linear',
           }}
         />
       );
     });
-  }, []);
-
-  const renderMist = useCallback(() => {
-    return Array.from({ length: 8 }).map((_, i) => (
-      <motion.div
-        key={`mist-${i}`}
-        style={{
-          position: 'absolute',
-          width: '100%',
-          height: '100vh',
-          background: 'linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0) 100%)',
-          opacity: 0.3,
-        }}
-        animate={{
-          x: ['-100%', '100%'],
-          opacity: [0.1, 0.2, 0.1]
-        }}
-        transition={{
-          duration: 20 + Math.random() * 10,
-          repeat: Infinity,
-          delay: i * 3,
-          ease: 'linear'
-        }}
-      />
-    ));
-  }, []);
-
-  const renderOvercastClouds = useCallback(() => {
-    return Array.from({ length: 5 }).map((_, i) => (
-      <motion.div
-        key={`cloud-${i}`}
-        style={{
-          position: 'absolute',
-          width: '200%',
-          height: '100vh',
-          background: `linear-gradient(90deg, 
-            rgba(255,255,255,0) 0%, 
-            rgba(255,255,255,${0.02 + (i * 0.01)}) 50%,
-            rgba(255,255,255,0) 100%)`,
-          top: `${(i * 20)}%`,
-          left: '-100%',
-        }}
-        animate={{
-          x: ['0%', '100%']
-        }}
-        transition={{
-          duration: 30 + (i * 5),
-          repeat: Infinity,
-          ease: 'linear'
-        }}
-      />
-    ));
-  }, []);
-
-  const renderClearSky = useCallback(() => {
-    return (
-      <>
-        {Array.from({ length: 20 }).map((_, i) => {
-          const leftPos = `${Math.random() * 100}%`;
-          const topPos = `${Math.random() * 100}%`;
-          return (
-            <motion.div
-              key={`star-${i}`}
-              style={{
-                position: 'absolute',
-                width: '2px',
-                height: '2px',
-                background: 'rgba(255,255,255,0.5)',
-                borderRadius: '50%',
-                left: leftPos,
-                top: topPos,
-              }}
-              animate={{
-                scale: [1, 1.5, 1],
-                opacity: [0.3, 0.7, 0.3],
-              }}
-              transition={{
-                duration: 2 + Math.random() * 2,
-                repeat: Infinity,
-                delay: Math.random() * 2,
-                ease: 'easeInOut'
-              }}
-            />
-          );
-        })}
-      </>
-    );
-  }, []);
+  };
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      pointerEvents: 'none',
-      overflow: 'hidden',
-      zIndex: 0
-    }}>
-      {(lowerCondition.includes('rain')) && renderRaindrops()}
-      {(lowerCondition.includes('mist') || lowerCondition.includes('fog')) && renderMist()}
-      {(lowerCondition.includes('overcast')) && renderOvercastClouds()}
-      {(lowerCondition.includes('clear')) && renderClearSky()}
+    <div className={styles.container}>
+      {conditions.map((condition, index) => (
+        <div key={`${condition.type}-${index}`} className={styles.layer}>
+          {condition.type === 'fog' && (
+            <motion.div
+              className={styles.fog}
+              animate={{
+                x: ['-100%', '100%'],
+              }}
+              transition={{
+                duration: 20,
+                repeat: Infinity,
+                ease: 'linear',
+              }}
+            />
+          )}
+          {(condition.type === 'rain' || condition.type === 'snow') && renderParticles(condition)}
+          {condition.type === 'thunder' && (
+            <motion.div
+              className={styles.lightning}
+              animate={{
+                opacity: [0, 1, 0],
+              }}
+              transition={{
+                duration: 0.5,
+                repeat: Infinity,
+                repeatDelay: Math.random() * 5 + 2,
+              }}
+            />
+          )}
+        </div>
+      ))}
     </div>
   );
 };

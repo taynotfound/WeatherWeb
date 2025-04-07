@@ -1,32 +1,82 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FiSearch } from 'react-icons/fi';
-import cities from 'cities.json';
-
-interface City {
-  name: string;
-  country: string;
-  lat: string;
-  lng: string;
-  admin1?: string;
-  admin2?: string;
-}
+import ReactCountryFlag from 'react-country-flag';
 
 interface SearchBarProps {
-  onSearch: (city: string) => void;
+  onCitySelect: (city: string) => void;
 }
 
-const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
+interface LocationSuggestion {
+  city: string;
+  country: string;
+  countryCode: string;
+  state?: string;
+  zip?: string;
+}
+
+const SearchBar: React.FC<SearchBarProps> = ({ onCitySelect }) => {
   const [query, setQuery] = useState('');
-  const [suggestions, setSuggestions] = useState<City[]>([]);
-  const [isOpen, setIsOpen] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState(-1);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  // Common cities with additional information
+  const locations: LocationSuggestion[] = [
+    { city: 'London', country: 'United Kingdom', countryCode: 'GB', state: 'England', zip: 'SW1A 1AA' },
+    { city: 'New York', country: 'United States', countryCode: 'US', state: 'New York', zip: '10001' },
+    { city: 'Tokyo', country: 'Japan', countryCode: 'JP', state: 'Tokyo', zip: '100-0001' },
+    { city: 'Paris', country: 'France', countryCode: 'FR', state: 'Île-de-France', zip: '75001' },
+    { city: 'Berlin', country: 'Germany', countryCode: 'DE', state: 'Berlin', zip: '10115' },
+    { city: 'Madrid', country: 'Spain', countryCode: 'ES', state: 'Community of Madrid', zip: '28001' },
+    { city: 'Rome', country: 'Italy', countryCode: 'IT', state: 'Lazio', zip: '00100' },
+    { city: 'Moscow', country: 'Russia', countryCode: 'RU', state: 'Moscow', zip: '101000' },
+    { city: 'Beijing', country: 'China', countryCode: 'CN', state: 'Beijing', zip: '100000' },
+    { city: 'Dubai', country: 'United Arab Emirates', countryCode: 'AE', state: 'Dubai', zip: '00000' },
+  ];
+
+  // Fuzzy search function
+  const fuzzySearch = (searchQuery: string, locations: LocationSuggestion[]): LocationSuggestion[] => {
+    const lowerQuery = searchQuery.toLowerCase();
+    return locations
+      .filter(location => {
+        const lowerCity = location.city.toLowerCase();
+        const lowerCountry = location.country.toLowerCase();
+        const lowerState = location.state?.toLowerCase() || '';
+        const lowerZip = location.zip?.toLowerCase() || '';
+        
+        return (
+          lowerCity.includes(lowerQuery) ||
+          lowerCountry.includes(lowerQuery) ||
+          lowerState.includes(lowerQuery) ||
+          lowerZip.includes(lowerQuery)
+        );
+      })
+      .sort((a, b) => {
+        // Prioritize matches that start with the query
+        const aStartsWithQuery = a.city.toLowerCase().startsWith(lowerQuery);
+        const bStartsWithQuery = b.city.toLowerCase().startsWith(lowerQuery);
+        if (aStartsWithQuery && !bStartsWithQuery) return -1;
+        if (!aStartsWithQuery && bStartsWithQuery) return 1;
+        return a.city.localeCompare(b.city);
+      })
+      .slice(0, 5); // Limit to 5 suggestions
+  };
+
+  useEffect(() => {
+    if (query.length >= 2) {
+      const fuzzyResults = fuzzySearch(query, locations);
+      setSuggestions(fuzzyResults);
+      setShowSuggestions(true);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  }, [query]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
       }
     };
 
@@ -34,231 +84,96 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setQuery(value);
-    setSelectedIndex(-1);
-    
-    if (value.length > 1) {
-      const filtered = (cities as unknown as City[])
-        .filter(city => 
-          city.name.toLowerCase().includes(value.toLowerCase()) ||
-          city.country.toLowerCase().includes(value.toLowerCase())
-        )
-        .slice(0, 7);
-      setSuggestions(filtered);
-      setIsOpen(true);
-    } else {
-      setSuggestions([]);
-      setIsOpen(false);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!isOpen) return;
-
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        setSelectedIndex(prev => 
-          prev < suggestions.length - 1 ? prev + 1 : prev
-        );
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setSelectedIndex(prev => prev > -1 ? prev - 1 : prev);
-        break;
-      case 'Enter':
-        e.preventDefault();
-        if (selectedIndex > -1) {
-          handleSuggestionClick(suggestions[selectedIndex].name);
-        } else if (query) {
-          handleSubmit(e);
-        }
-        break;
-      case 'Escape':
-        setIsOpen(false);
-        break;
-    }
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (query) {
-      onSearch(query);
-      setIsOpen(false);
+    if (query.trim()) {
+      onCitySelect(query.trim());
+      setShowSuggestions(false);
     }
-  };
-
-  const handleSuggestionClick = (cityName: string) => {
-    setQuery(cityName);
-    onSearch(cityName);
-    setIsOpen(false);
   };
 
   return (
-    <div className="search-container" style={{
-      position: 'relative',
-      width: '100%',
-      maxWidth: '32rem',
-      margin: '0 auto',
-    }} ref={wrapperRef}>
-      <style jsx global>{`
-
-        .suggestion-container {
-          position: absolute;
-          top: calc(100% + 8px);
-          left: 0;
-          right: 0;
-          background: var(--glass-background);
-          border: 1px solid var(--glass-border);
-          border-radius: 0.75rem;
-          overflow: hidden;
-          z-index: 1000;
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-          animation: slideDown 0.2s ease-out;
-        }
-
-        @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .suggestion-item {
-          padding: 12px 16px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          border-bottom: 1px solid var(--glass-border);
-          background: var(--glass-background);
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px);
-        }
-
-        .suggestion-item:last-child {
-          border-bottom: none;
-        }
-
-        .suggestion-item:hover,
-        .suggestion-item.selected {
-          background: var(--glass-hover-bg);
-          transform: translateX(4px);
-        }
-
-        .suggestion-item .city-name {
-          font-weight: 500;
-          color: var(--text-primary);
-        }
-
-        .suggestion-item .country-name {
-          font-size: 0.875rem;
-          color: var(--text-secondary);
-          opacity: 0.8;
-        }
-
-        .search-input {
-          width: 100%;
-          padding: 0.75rem 1rem 0.75rem 2.75rem;
-          border-radius: 0.75rem;
-          border: 1px solid var(--glass-border);
-          background: var(--glass-background);
-          color: var(--text-primary);
-          font-size: 1rem;
-          outline: none;
-          transition: all 0.2s ease;
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px);
-        }
-
-        .search-input:focus {
-          border-color: var(--primary);
-          box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.2);
-          background: var(--glass-hover-bg);
-        }
-      `}</style>
-
-      <div className="glass" style={{
-        padding: '0.5rem',
-        borderRadius: '1rem',
-      }}>
-        <form onSubmit={handleSubmit} style={{
+    <div ref={searchRef} style={{ position: 'relative', width: '100%' }}>
+      <form onSubmit={handleSubmit} style={{ width: '100%' }}>
+        <div className="glass" style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '0.5rem'
+          padding: '0.75rem 1rem',
+          borderRadius: '0.75rem',
+          gap: '0.5rem',
+          width: '100%'
         }}>
-          <div style={{
-            position: 'relative',
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-          }}>
-            <div style={{
-              position: 'absolute',
-              left: '1rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--text-secondary)',
-              pointerEvents: 'none',
-            }}>
-              <FiSearch size={20} />
-            </div>
-            <input
-              ref={inputRef}
-              type="text"
-              placeholder="Search for a city..."
-              value={query}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-              className="search-input glass-hover"
-            />
-          </div>
-          <button
-            type="submit"
-            className="glass-hover"
+          <FiSearch size={20} style={{ color: 'var(--text-secondary)' }} />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => query.length >= 2 && setShowSuggestions(true)}
+            placeholder="Search for a city..."
             style={{
-              padding: '0.75rem',
-              borderRadius: '0.75rem',
-              background: 'var(--primary)',
+              background: 'none',
               border: 'none',
-              color: 'white',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              boxShadow: '0 2px 8px rgba(var(--primary-rgb), 0.3)',
+              outline: 'none',
+              color: 'var(--text-primary)',
+              width: '100%',
+              fontSize: '1rem'
             }}
-          >
-            <FiSearch size={20} />
-          </button>
-        </form>
-      </div>
+          />
+        </div>
+      </form>
 
-      {isOpen && suggestions.length > 0 && (
-        <div className="suggestion-container">
-          {suggestions.map((city, index) => (
-            <div
-              key={`${city.name}-${city.country}-${index}`}
-              className={`suggestion-item ${selectedIndex === index ? 'selected' : ''}`}
-              onClick={() => handleSuggestionClick(city.name)}
+      {showSuggestions && suggestions.length > 0 && (
+        <div className="glass" style={{
+          position: 'absolute',
+          top: 'calc(100% + 0.5rem)',
+          left: 0,
+          right: 0,
+          borderRadius: '0.75rem',
+          overflow: 'hidden',
+          zIndex: 10
+        }}>
+          <style jsx>{`
+            .suggestion-button {
+              width: 100%;
+              padding: 0.75rem 1rem;
+              background: none;
+              border: none;
+              text-align: left;
+              color: var(--text-primary);
+              cursor: pointer;
+              transition: background-color 0.2s;
+            }
+            .suggestion-button:hover {
+              background-color: rgba(255, 255, 255, 0.1);
+            }
+          `}</style>
+          {suggestions.map((suggestion, index) => (
+            <button
+              key={index}
+              className="suggestion-button"
+              onClick={() => {
+                setQuery(suggestion.city);
+                onCitySelect(suggestion.city);
+                setShowSuggestions(false);
+              }}
             >
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}>
-                <span className="city-name">{city.name}</span>
-                <span className="country-name">{city.country}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <ReactCountryFlag countryCode={suggestion.countryCode} svg style={{ width: '1.5em', height: '1.5em' }} />
+                <div>
+                  <div style={{ fontWeight: 500 }}>{suggestion.city}</div>
+                  <div style={{ 
+                    fontSize: '0.875rem', 
+                    color: 'var(--text-secondary)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.25rem'
+                  }}>
+                    <span>{suggestion.state && `${suggestion.state}, `}{suggestion.country}</span>
+                    {suggestion.zip && <span>ZIP: {suggestion.zip}</span>}
+                  </div>
+                </div>
               </div>
-            </div>
+            </button>
           ))}
         </div>
       )}
