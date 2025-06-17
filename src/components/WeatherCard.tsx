@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiDroplet, FiWind, FiSunrise, FiSunset, FiClock, FiTrendingUp, FiTrendingDown } from 'react-icons/fi';
+import { FiDroplet, FiWind, FiSunrise, FiSunset, FiClock, FiTrendingUp, FiTrendingDown, FiThermometer, FiEye } from 'react-icons/fi';
 import ReactCountryFlag from 'react-country-flag';
 import Image from 'next/image';
 import { useWeather } from './WeatherProvider';
@@ -123,10 +123,11 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
     return conditions;
   };
 
-  // Update weather conditions when they change
-  React.useEffect(() => {
-    updateWeather(condition, isDay, precipitation);
-  }, [condition, isDay, updateWeather, precipitation]);
+  useEffect(() => {
+    if (condition) {
+      updateWeather(condition, isDay, precipitation ? { probability: precipitation.probability } : undefined);
+    }
+  }, [condition, isDay, precipitation, updateWeather]);
 
   const weatherConditions = getWeatherConditions(condition);
 
@@ -163,173 +164,228 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
     return `GMT${sign}${Math.abs(hours)}`;
   };
 
+  const getFrostEffect = (temp: number) => {
+    if (temp <= 0) {
+      return 'frost-effect';
+    } else if (temp >= 20) {
+      return 'melt-effect';
+    }
+    return '';
+  };
+
   return (
-    <div className="weather-card">
-      <div className="weather-card-container">
-        <motion.div 
-          className="weather-card-content glass"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="weather-card-header">
-            <div className="weather-card-location">
-              <h2 className="weather-card-city">{city}</h2>
-              <div className="weather-card-country">
-                <ReactCountryFlag countryCode={country} svg />
-                <p>{country}</p>
-              </div>
+    <div className="relative">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={`glass p-6 rounded-2xl ${getFrostEffect(temperature)}`}
+      >
+        {/* City and Country */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+              {city}
+              <ReactCountryFlag
+                countryCode={country}
+                svg
+                className="rounded-sm"
+                style={{
+                  width: '1.5em',
+                  height: '1.5em',
+                }}
+              />
+            </h2>
+            <p className="text-white/60 text-sm">
+              Last updated: {new Date(lastUpdate * 1000).toLocaleTimeString()}
+            </p>
+          </div>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => onUnitChange(unit === 'C' ? 'F' : 'C')}
+            className="px-3 py-1 rounded-full bg-white/10 text-white text-sm hover:bg-white/20 
+                     transition-colors duration-200"
+          >
+            °{unit}
+          </motion.button>
+        </div>
+
+        {/* Main Weather Info */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="flex items-center gap-4">
+            <div className="relative w-24 h-24">
+              <Image
+                src={`https://openweathermap.org/img/wn/${icon}@2x.png`}
+                alt={condition}
+                fill
+                className="object-contain"
+              />
             </div>
-            <div className="weather-card-temperature">
-              <div className="temperature-display">
-                <div className="temperature-value">
-                  {temperature}°
-                  <div className="temperature-units">
-                    <button
-                      onClick={() => onUnitChange('C')}
-                      className={`unit-button ${unit === 'C' ? 'active' : ''}`}
-                    >
-                      °C
-                    </button>
-                    <button
-                      onClick={() => onUnitChange('F')}
-                      className={`unit-button ${unit === 'F' ? 'active' : ''}`}
-                    >
-                      °F
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div className="weather-condition">{condition}</div>
+            <div>
+              <h3 className="text-4xl font-bold text-white mb-1">
+                {Math.round(temperature)}°{unit}
+              </h3>
+              <p className="text-white/60 capitalize">{condition}</p>
             </div>
           </div>
           
-          <div className="weather-details">
-            <div className="weather-details-row">
-              <div className="weather-detail-item">
-                <FiSunrise className="weather-icon" />
-                <div>
-                  <div className="weather-detail-label">Sunrise</div>
-                  <div className="weather-detail-value">{sunrise}</div>
-                </div>
+          <div className="grid grid-cols-2 gap-4">
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              className="glass-hover p-3 rounded-xl"
+            >
+              <div className="flex items-center gap-2 text-white/60 mb-1">
+                <FiThermometer />
+                <span className="text-sm">Feels Like</span>
               </div>
-              <div className="weather-detail-item">
-                <FiSunset className="weather-icon" />
-                <div>
-                  <div className="weather-detail-label">Sunset</div>
-                  <div className="weather-detail-value">{sunset}</div>
-                </div>
-              </div>
-              <div className="weather-detail-item">
-                <FiDroplet className="weather-icon" />
-                <div>
-                  <div className="weather-detail-label">Humidity</div>
-                  <div className="weather-detail-value">{humidity}%</div>
-                </div>
-              </div>
-              <div className="weather-detail-item">
-                <FiWind className="weather-icon" />
-                <div>
-                  <div className="weather-detail-label">Wind Speed</div>
-                  <div className="weather-detail-value">{windSpeed} m/s</div>
-                </div>
-              </div>
-              {precipitation && precipitation.total > 0 && (
-                <div className="weather-detail-item">
-                  <FiTrendingUp className="weather-icon" />
-                  <div>
-                    <div className="weather-detail-label">Precipitation</div>
-                    <div className="weather-detail-value">{precipitation.total} mm</div>
-                  </div>
-                </div>
-              )}
-              {precipitation && precipitation.probability > 0 && (
-                <div className="weather-detail-item">
-                  <FiClock className="weather-icon" />
-                  <div>
-                    <div className="weather-detail-label">Probability</div>
-                    <div className="weather-detail-value">{precipitation.probability}%</div>
-                  </div>
-                </div>
-              )}
-              {pressure && (
-                <div className="weather-detail-item">
-                  <FiTrendingDown className="weather-icon" />
-                  <div>
-                    <div className="weather-detail-label">Pressure</div>
-                    <div className="weather-detail-value">{pressure} hPa</div>
-                  </div>
-                </div>
-              )}
+              <p className="text-white font-medium">{Math.round(feelsLike)}°{unit}</p>
+            </motion.div>
 
-              <div className="weather-detail-item">
-                <FiClock className="weather-icon" />
-                <div>
-                  <div className="weather-detail-label">Timezone</div>
-                  <div className="weather-detail-value">{formatTimezone(timezone)}</div>
-                </div>
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              className="glass-hover p-3 rounded-xl"
+            >
+              <div className="flex items-center gap-2 text-white/60 mb-1">
+                <FiDroplet />
+                <span className="text-sm">Humidity</span>
               </div>
-              <div className="weather-detail-item">
-                <FiTrendingDown className="weather-icon" />
-                <div>
-                  <div className="weather-detail-label">Min Temperature</div>
-                  <div className="weather-detail-value">{tempMin}°</div>
-                </div>
+              <p className="text-white font-medium">{humidity}%</p>
+            </motion.div>
+
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              className="glass-hover p-3 rounded-xl"
+            >
+              <div className="flex items-center gap-2 text-white/60 mb-1">
+                <FiWind />
+                <span className="text-sm">Wind</span>
               </div>
-              <div className="weather-detail-item">
-                <FiTrendingUp className="weather-icon" />
-                <div>
-                  <div className="weather-detail-label">Max Temperature</div>
-                  <div className="weather-detail-value">{tempMax}°</div>
-                </div>
+              <p className="text-white font-medium">{windSpeed} m/s</p>
+            </motion.div>
+
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              className="glass-hover p-3 rounded-xl"
+            >
+              <div className="flex items-center gap-2 text-white/60 mb-1">
+                <FiEye />
+                <span className="text-sm">Visibility</span>
               </div>
+              <p className="text-white font-medium">
+                {visibility >= 1000 ? `${(visibility / 1000).toFixed(1)}km` : `${visibility}m`}
+              </p>
+            </motion.div>
+          </div>
+        </div>
+
+        {/* Sunrise and Sunset */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            className="glass-hover p-4 rounded-xl"
+          >
+            <div className="flex items-center gap-2 text-white/60 mb-2">
+              <FiSunrise className="text-yellow-400" />
+              <span>Sunrise</span>
             </div>
+            <p className="text-white font-medium">{sunrise}</p>
+          </motion.div>
+
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            className="glass-hover p-4 rounded-xl"
+          >
+            <div className="flex items-center gap-2 text-white/60 mb-2">
+              <FiSunset className="text-orange-400" />
+              <span>Sunset</span>
+            </div>
+            <p className="text-white font-medium">{sunset}</p>
+          </motion.div>
+        </div>
+
+        {/* Temperature Range */}
+        <motion.div
+          whileHover={{ scale: 1.02 }}
+          className="glass-hover p-4 rounded-xl mb-6"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-white/60">
+              <FiTrendingDown className="text-blue-400" />
+              <span>Min</span>
+            </div>
+            <div className="flex items-center gap-2 text-white/60">
+              <FiTrendingUp className="text-red-400" />
+              <span>Max</span>
+            </div>
+          </div>
+          <div className="flex items-center justify-between mt-2">
+            <p className="text-white font-medium">{Math.round(tempMin)}°{unit}</p>
+            <p className="text-white font-medium">{Math.round(tempMax)}°{unit}</p>
           </div>
         </motion.div>
 
-        {/* Precipitation Forecast Section */}
-        {precipitationForecast && (
+        {/* Precipitation Forecast */}
+        {precipitationForecast && precipitationForecast.highestChance.probability > 0 && (
           <motion.div
-            className="glass p-6 rounded-2xl mt-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
+            className="glass p-6 rounded-2xl"
           >
-            <h3 className="text-lg font-bold text-text-primary mb-4">Precipitation Forecast</h3>
-            <div className="flex flex-col gap-4">
-              {precipitationForecast.nextRain && (
-                <div className="flex items-center gap-4 p-4 glass-hover rounded-lg">
-                  <FiDroplet size={20} className="text-primary" />
-                  <div>
-                    <div className="text-text-secondary text-sm">Next Rain</div>
-                    <div className="text-text-primary">
-                      {precipitationForecast.nextRain.time} ({Math.round(precipitationForecast.nextRain.probability * 100)}%)
-                    </div>
+            <h3 className="text-lg font-bold text-white mb-4">Precipitation Forecast</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {precipitationForecast.nextRain && precipitationForecast.nextRain.probability > 0 && (
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  className="glass-hover p-4 rounded-xl"
+                >
+                  <div className="flex items-center gap-2 text-white/60 mb-2">
+                    <FiDroplet className="text-blue-400" />
+                    <span>Next Rain</span>
                   </div>
-                </div>
+                  <p className="text-white font-medium">
+                    {precipitationForecast.nextRain.time}
+                  </p>
+                  <p className="text-white/60 text-sm">
+                    {Math.round(precipitationForecast.nextRain.probability * 100)}% chance
+                  </p>
+                </motion.div>
               )}
-              <div className="flex items-center gap-4 p-4 glass-hover rounded-lg">
-                <FiTrendingDown size={20} className="text-accent" />
-                <div>
-                  <div className="text-text-secondary text-sm">Lowest Chance</div>
-                  <div className="text-text-primary">
-                    {precipitationForecast.lowestChance.time} ({Math.round(precipitationForecast.lowestChance.probability * 100)}%)
-                  </div>
+
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                className="glass-hover p-4 rounded-xl"
+              >
+                <div className="flex items-center gap-2 text-white/60 mb-2">
+                  <FiTrendingDown className="text-green-400" />
+                  <span>Lowest Chance</span>
                 </div>
-              </div>
-              <div className="flex items-center gap-4 p-4 glass-hover rounded-lg">
-                <FiTrendingUp size={20} className="text-primary" />
-                <div>
-                  <div className="text-text-secondary text-sm">Highest Chance</div>
-                  <div className="text-text-primary">
-                    {precipitationForecast.highestChance.time} ({Math.round(precipitationForecast.highestChance.probability * 100)}%)
-                  </div>
+                <p className="text-white font-medium">
+                  {precipitationForecast.lowestChance.time}
+                </p>
+                <p className="text-white/60 text-sm">
+                  {Math.round(precipitationForecast.lowestChance.probability * 100)}% chance
+                </p>
+              </motion.div>
+
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                className="glass-hover p-4 rounded-xl"
+              >
+                <div className="flex items-center gap-2 text-white/60 mb-2">
+                  <FiTrendingUp className="text-red-400" />
+                  <span>Highest Chance</span>
                 </div>
-              </div>
+                <p className="text-white font-medium">
+                  {precipitationForecast.highestChance.time}
+                </p>
+                <p className="text-white/60 text-sm">
+                  {Math.round(precipitationForecast.highestChance.probability * 100)}% chance
+                </p>
+              </motion.div>
             </div>
           </motion.div>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 };

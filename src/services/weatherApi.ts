@@ -1,8 +1,9 @@
 import axios from 'axios';
+import { setCache, getCache } from './cache';
 
 // You'll need to get an API key from OpenWeatherMap
 // https://openweathermap.org/api
-const API_KEY = process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY;
+const API_KEY = process.env.OPENWEATHER_API_KEY;
 const BASE_URL = 'https://api.openweathermap.org/data/2.5';
 
 export interface WeatherData {
@@ -52,6 +53,7 @@ export interface WeatherData {
   timezone: number;
   tempMin: number;
   tempMax: number;
+  isDay: boolean;
 }
 
 export interface ForecastData {
@@ -79,7 +81,11 @@ const formatDay = (timestamp: number, timezone: number): string => {
 };
 
 // Get current weather data
-export const getCurrentWeather = async (city: string): Promise<WeatherData> => {
+export async function getCurrentWeather(city: string): Promise<WeatherData> {
+  const cacheKey = `weather_${city.toLowerCase()}`;
+  const cached = getCache(cacheKey);
+  if (cached) return cached;
+
   try {
     const response = await fetch(`/api/weather?city=${encodeURIComponent(city)}`);
     if (!response.ok) {
@@ -89,6 +95,7 @@ export const getCurrentWeather = async (city: string): Promise<WeatherData> => {
       throw new Error('Failed to fetch weather data.');
     }
     const data = await response.json();
+    setCache(cacheKey, data, 10);
     return data;
   } catch (error) {
     if (error instanceof Error) {
@@ -96,10 +103,14 @@ export const getCurrentWeather = async (city: string): Promise<WeatherData> => {
     }
     throw new Error('An unexpected error occurred while fetching weather data.');
   }
-};
+}
 
 // Get 5-day forecast data
-export const getForecast = async (city: string): Promise<ForecastData[]> => {
+export async function getForecast(city: string): Promise<ForecastData[]> {
+  const cacheKey = `forecast_${city.toLowerCase()}`;
+  const cached = getCache(cacheKey);
+  if (cached) return cached;
+
   try {
     const response = await fetch(`/api/forecast?city=${encodeURIComponent(city)}`);
     if (!response.ok) {
@@ -109,6 +120,7 @@ export const getForecast = async (city: string): Promise<ForecastData[]> => {
       throw new Error('Failed to fetch forecast data.');
     }
     const data = await response.json();
+    setCache(cacheKey, data, 10);
     return data;
   } catch (error) {
     if (error instanceof Error) {
@@ -116,4 +128,4 @@ export const getForecast = async (city: string): Promise<ForecastData[]> => {
     }
     throw new Error('An unexpected error occurred while fetching forecast data.');
   }
-}; 
+} 

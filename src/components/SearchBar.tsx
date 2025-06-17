@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FiSearch } from 'react-icons/fi';
+import { FiSearch, FiMapPin } from 'react-icons/fi';
 import ReactCountryFlag from 'react-country-flag';
 
 interface SearchBarProps {
@@ -12,6 +12,8 @@ interface LocationSuggestion {
   countryCode: string;
   state?: string;
   zip?: string;
+  lat?: number;
+  lon?: number;
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({ onCitySelect }) => {
@@ -20,57 +22,29 @@ const SearchBar: React.FC<SearchBarProps> = ({ onCitySelect }) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // Common cities with additional information
-  const locations: LocationSuggestion[] = [
-    { city: 'London', country: 'United Kingdom', countryCode: 'GB', state: 'England', zip: 'SW1A 1AA' },
-    { city: 'New York', country: 'United States', countryCode: 'US', state: 'New York', zip: '10001' },
-    { city: 'Tokyo', country: 'Japan', countryCode: 'JP', state: 'Tokyo', zip: '100-0001' },
-    { city: 'Paris', country: 'France', countryCode: 'FR', state: 'Île-de-France', zip: '75001' },
-    { city: 'Berlin', country: 'Germany', countryCode: 'DE', state: 'Berlin', zip: '10115' },
-    { city: 'Madrid', country: 'Spain', countryCode: 'ES', state: 'Community of Madrid', zip: '28001' },
-    { city: 'Rome', country: 'Italy', countryCode: 'IT', state: 'Lazio', zip: '00100' },
-    { city: 'Moscow', country: 'Russia', countryCode: 'RU', state: 'Moscow', zip: '101000' },
-    { city: 'Beijing', country: 'China', countryCode: 'CN', state: 'Beijing', zip: '100000' },
-    { city: 'Dubai', country: 'United Arab Emirates', countryCode: 'AE', state: 'Dubai', zip: '00000' },
-  ];
-
-  // Fuzzy search function
-  const fuzzySearch = (searchQuery: string, locations: LocationSuggestion[]): LocationSuggestion[] => {
-    const lowerQuery = searchQuery.toLowerCase();
-    return locations
-      .filter(location => {
-        const lowerCity = location.city.toLowerCase();
-        const lowerCountry = location.country.toLowerCase();
-        const lowerState = location.state?.toLowerCase() || '';
-        const lowerZip = location.zip?.toLowerCase() || '';
-        
-        return (
-          lowerCity.includes(lowerQuery) ||
-          lowerCountry.includes(lowerQuery) ||
-          lowerState.includes(lowerQuery) ||
-          lowerZip.includes(lowerQuery)
-        );
-      })
-      .sort((a, b) => {
-        // Prioritize matches that start with the query
-        const aStartsWithQuery = a.city.toLowerCase().startsWith(lowerQuery);
-        const bStartsWithQuery = b.city.toLowerCase().startsWith(lowerQuery);
-        if (aStartsWithQuery && !bStartsWithQuery) return -1;
-        if (!aStartsWithQuery && bStartsWithQuery) return 1;
-        return a.city.localeCompare(b.city);
-      })
-      .slice(0, 5); // Limit to 5 suggestions
-  };
-
   useEffect(() => {
-    if (query.length >= 2) {
-      const fuzzyResults = fuzzySearch(query, locations);
-      setSuggestions(fuzzyResults);
-      setShowSuggestions(true);
-    } else {
-      setSuggestions([]);
-      setShowSuggestions(false);
-    }
+    const fetchSuggestions = async () => {
+      if (query.length >= 2) {
+        try {
+          const response = await fetch(
+            `/api/cities-autocomplete?query=${encodeURIComponent(query)}`
+          );
+          const data = await response.json();
+          if (data.data) {
+            setSuggestions(data.data);
+            setShowSuggestions(true);
+          }
+        } catch (error) {
+          console.error('Error fetching city suggestions:', error);
+          setSuggestions([]);
+        }
+      } else {
+        setSuggestions([]);
+        setShowSuggestions(false);
+      }
+    };
+    const debounceTimer = setTimeout(fetchSuggestions, 300);
+    return () => clearTimeout(debounceTimer);
   }, [query]);
 
   useEffect(() => {
@@ -89,6 +63,37 @@ const SearchBar: React.FC<SearchBarProps> = ({ onCitySelect }) => {
     if (query.trim()) {
       onCitySelect(query.trim());
       setShowSuggestions(false);
+    }
+  };
+
+  const handleDetectLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          try {
+            const response = await fetch(
+              `http://geodb-cities-api.wirefreethought.com/v1/geo/cities?location=${latitude},${longitude}&radius=50&limit=1`
+            );
+            const data = await response.json();
+            
+            if (data.data && data.data.length > 0) {
+              const city = data.data[0];
+              setQuery(city.name);
+              onCitySelect(city.name);
+              setShowSuggestions(false);
+            }
+          } catch (error) {
+            console.error('Error fetching nearby city:', error);
+            alert('Unable to detect location.');
+          }
+        },
+        (error) => {
+          alert('Unable to detect location.');
+        }
+      );
+    } else {
+      alert('Geolocation is not supported by this browser.');
     }
   };
 
@@ -119,6 +124,22 @@ const SearchBar: React.FC<SearchBarProps> = ({ onCitySelect }) => {
               fontSize: '1rem'
             }}
           />
+          <button
+            type="button"
+            onClick={handleDetectLocation}
+            title="Detect my location"
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: 'var(--text-secondary)',
+              marginLeft: '0.5rem',
+              display: 'flex',
+              alignItems: 'center'
+            }}
+          >
+            <FiMapPin size={20} />
+          </button>
         </div>
       </form>
 
@@ -168,8 +189,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onCitySelect }) => {
                     flexDirection: 'column',
                     gap: '0.25rem'
                   }}>
-                    <span>{suggestion.state && `${suggestion.state}, `}{suggestion.country}</span>
-                    {suggestion.zip && <span>ZIP: {suggestion.zip}</span>}
+                    <span>{suggestion.country}</span>
                   </div>
                 </div>
               </div>

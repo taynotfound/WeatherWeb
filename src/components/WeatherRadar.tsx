@@ -18,6 +18,7 @@ const WeatherRadar: React.FC<WeatherRadarProps> = ({ isOpen, onClose, lat, lon }
   const [frames, setFrames] = useState<RadarFrame[]>([]);
   const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -27,9 +28,17 @@ const WeatherRadar: React.FC<WeatherRadarProps> = ({ isOpen, onClose, lat, lon }
 
   const fetchRadarData = async () => {
     try {
+      setError(null);
       const response = await fetch('https://api.rainviewer.com/public/weather-maps.json');
+      if (!response.ok) {
+        throw new Error('Failed to fetch radar data');
+      }
       const data = await response.json();
       
+      if (!data.radar?.past?.length) {
+        throw new Error('No radar data available');
+      }
+
       const radarFrames = data.radar.past.map((item: any) => ({
         path: item.path,
         time: item.time
@@ -38,6 +47,8 @@ const WeatherRadar: React.FC<WeatherRadarProps> = ({ isOpen, onClose, lat, lon }
       setFrames(radarFrames);
     } catch (error) {
       console.error('Error fetching radar data:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load radar data');
+      onClose(); // Close the radar view when there's an error
     }
   };
 
@@ -53,7 +64,8 @@ const WeatherRadar: React.FC<WeatherRadarProps> = ({ isOpen, onClose, lat, lon }
     return () => clearInterval(interval);
   }, [isPlaying, frames.length]);
 
-  if (!isOpen) return null;
+  // Don't render anything if there's an error or if not open
+  if (!isOpen || error) return null;
 
   const baseUrl = 'https://tilecache.rainviewer.com';
   const zoom = 7;
@@ -95,6 +107,10 @@ const WeatherRadar: React.FC<WeatherRadarProps> = ({ isOpen, onClose, lat, lon }
                 src={getTileUrl(frames[currentFrameIndex])}
                 alt="Weather Radar"
                 className="w-full h-full object-cover rounded"
+                onError={() => {
+                  setError('Failed to load radar image');
+                  onClose();
+                }}
               />
             )}
           </div>

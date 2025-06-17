@@ -1,9 +1,9 @@
 'use client';
 import Link from 'next/link';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { FiGithub } from 'react-icons/fi';
+import { FiGithub, FiStar, FiSearch, FiClock, FiShare2, FiMapPin } from 'react-icons/fi';
 import SearchBar from '@/components/SearchBar';
 import WeatherCard from '@/components/WeatherCard';
 import WeatherDetails from '@/components/WeatherDetails';
@@ -13,236 +13,236 @@ import ErrorMessage from '@/components/ErrorMessage';
 import WeatherRadar from '@/components/WeatherRadar';
 import { getCurrentWeather, getForecast, WeatherData, ForecastData } from '@/services/weatherApi';
 import WeatherAnimation from '@/components/WeatherAnimation';
-import RainEffect from '../components/RainEffect';
+import AIRecommendations from '@/components/AIRecommendations';
+import FavoritesSidebar from '@/components/FavoritesSidebar';
+import AIChatWidget from '@/components/AIChatWidget';
+import { useFavorites } from '@/components/FavoritesContext';
+import { useRouter } from 'next/navigation';
+import Tomato from '@/components/Tomato';
 
-export default function Home() {
-  const [selectedCity, setSelectedCity] = useState<string>('');
-  const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [forecast, setForecast] = useState<ForecastData[]>([]);
-  const [error, setError] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(false);
-  const [unit, setUnit] = useState<'C' | 'F'>('C');
-  const [isRadarOpen, setIsRadarOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [isRaining, setIsRaining] = useState(false);
+type LoadingState = Set<string>;
 
-  // Handle window resize
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+export default function HomePage() {
+  const router = useRouter();
+  const [search, setSearch] = useState('');
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [favoriteWeather, setFavoriteWeather] = useState<Record<string, WeatherData>>({});
+  const [loading, setLoading] = useState<LoadingState>(new Set());
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const { favorites, removeFavorite } = useFavorites();
 
-  // Load London weather by default
-  useEffect(() => {
-    handleCitySelect('London');
-  }, []);
-
-  useEffect(() => {
-    if (weather?.condition) {
-      setIsRaining(weather.condition.toLowerCase().includes('rain'));
-    }
-  }, [weather?.condition]);
-
-  const getWeatherClass = (condition: string): string => {
-    const lowerCondition = condition?.toLowerCase() || '';
-    if (lowerCondition.includes('clear') || lowerCondition.includes('sun')) return 'sunny';
-    if (lowerCondition.includes('rain')) return 'rainy';
-    if (lowerCondition.includes('cloud')) return 'cloudy';
-    if (lowerCondition.includes('snow')) return 'snowy';
-    if (lowerCondition.includes('thunder')) return 'thunder';
-    return '';
-  };
-
-  const convertToFahrenheit = (celsius: number) => {
-    return Math.round((celsius * 9/5) + 32);
-  };
-
-  const formatTemperature = (temp: number) => {
-    return Number.isInteger(temp) ? temp : Number(temp.toFixed(1));
-  };
-
-  const getTemperatureInUnit = (celsius: number) => {
-    const temp = unit === 'C' ? celsius : convertToFahrenheit(celsius);
-    return formatTemperature(temp);
-  };
-
-  const isDay = (sunrise: number, sunset: number) => {
-    const now = Date.now() / 1000;
-    return now > sunrise && now < sunset;
-  };
-
-  const handleCitySelect = async (city: string) => {
-    setSelectedCity(city);
-    setLoading(true);
-    setError('');
-
+  const fetchWeather = useCallback(async (city: string) => {
     try {
-      const [weatherData, forecastData] = await Promise.all([
-        getCurrentWeather(city),
-        getForecast(city)
-      ]);
-      setWeather(weatherData);
-      setForecast(forecastData);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch weather data');
-      if (err instanceof Error && (err.message.includes('not supported') || err.message.includes('Failed to fetch'))) {
-        setWeather(null);
-        setForecast([]);
-      }
+      setLoading(prev => new Set(prev).add(city));
+      const data = await getCurrentWeather(city);
+      setFavoriteWeather(prev => ({ ...prev, [city]: data }));
+    } catch (error) {
+      console.error(`Failed to fetch weather for ${city}:`, error);
     } finally {
-      setLoading(false);
+      setLoading(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(city);
+        return newSet;
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    // Load recent searches from localStorage
+    const recent = JSON.parse(localStorage.getItem('recentSearches') || '[]');
+    setRecentSearches(recent);
+
+    // Fetch weather for favorites
+    favorites.forEach(city => {
+      if (!favoriteWeather[city]) {
+        fetchWeather(city);
+      }
+    });
+  }, [favorites, fetchWeather]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (search.trim()) {
+      router.push(`/weather?city=${encodeURIComponent(search.trim())}`);
     }
   };
 
-  const handleUnitChange = (newUnit: 'C' | 'F') => {
-    setUnit(newUnit);
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 }
   };
 
   return (
-    <>
-      <RainEffect isRaining={isRaining} />
-      <div className={`${weather ? getWeatherClass(weather.condition) : ''}`} />
-      {weather && (
-        <WeatherAnimation 
-          conditions={[{ type: weather.condition.toLowerCase().includes('rain') ? 'rain' : 'clear' }]} 
-          isDay={isDay(weather.sunriseTimestamp, weather.sunsetTimestamp)} 
-        />
-      )}
-      <main className="min-h-screen px-4 py-10 max-w-[90%] mx-auto relative z-10">
+    <div className="min-h-screen">
+      <main className="container mx-auto px-4 py-12">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="flex flex-col items-center mb-10"
+          className="text-center mb-16"
         >
-          <h1 className="mt-6 text-gradient text-5xl font-bold mb-2 text-center">
+          <h1 className="text-6xl font-bold mb-4 text-gradient">
             WeatherWeb
           </h1>
-          <p className="text-text-secondary text-center">
-            A modern glassmorphic weather application
+          <p className="text-xl text-white/70">
+            Your AI-powered weather companion
           </p>
         </motion.div>
 
-        <div className="mt-12 max-w-[40rem] w-full mx-auto">
-          <SearchBar onCitySelect={handleCitySelect} />
-        </div>
-        
-        {loading && (
-          <div className="text-center mt-8">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
-            <p className="mt-2 text-text-secondary">Loading weather data...</p>
-          </div>
-        )}
+        {/* Search Bar */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-2xl mx-auto mb-16"
+        >
+          <SearchBar
+            onCitySelect={(city) => {
+              if (city) {
+                router.push(`/weather?city=${encodeURIComponent(city)}`);
+              }
+            }}
+          />
+        </motion.div>
 
-        {error && !weather && (
-          <div className="mt-8 p-4 bg-red-500/10 border border-red-500/20 text-red-500 rounded-lg">
-            <p>{error}</p>
-          </div>
-        )}
-
-        {weather && !loading && (
-          <>
-            <div className="mt-10 mx-auto max-w-[80rem] w-[95%] relative">
-              <div className="flex flex-col gap-12">
-                <WeatherCard
-                  city={weather.city}
-                  country={weather.country}
-                  temperature={getTemperatureInUnit(weather.temperature)}
-                  condition={weather.condition}
-                  icon={weather.icon}
-                  humidity={weather.humidity}
-                  windSpeed={weather.windSpeed}
-                  windGust={weather.windGust}
-                  sunrise={weather.sunrise}
-                  sunset={weather.sunset}
-                  unit={unit}
-                  onUnitChange={handleUnitChange}
-                  visibility={weather.visibility}
-                  clouds={weather.clouds}
-                  lastUpdate={weather.dt}
-                  feelsLike={getTemperatureInUnit(weather.feelsLike)}
-                  isDay={isDay(weather.sunriseTimestamp, weather.sunsetTimestamp)}
-                  nightTemp={forecast[0]?.tempMin}
-                  airQuality={weather.airQuality}
-                  lat={weather.lat}
-                  lon={weather.lon}
-                  precipitation={weather.precipitation}
-                  precipitationForecast={weather.precipitationForecast}
-                  currentTime={weather.currentTime}
-                  timezone={weather.timezone}
-                  tempMin={getTemperatureInUnit(weather.tempMin)}
-                  tempMax={getTemperatureInUnit(weather.tempMax)}
-                />
-                
-                <WeatherDetails
-                  visibility={weather.visibility}
-                  clouds={weather.clouds}
-                  windSpeed={weather.windSpeed}
-                  windGust={weather.windGust}
-                  windDeg={weather.windDeg}
-                  lastUpdate={weather.dt}
-                  feelsLike={getTemperatureInUnit(weather.feelsLike)}
-                  humidity={weather.humidity}
-                  pressure={weather.pressure}
-                  precipitation={weather.precipitation}
-                  isDay={isDay(weather.sunriseTimestamp, weather.sunsetTimestamp)}
-                  nightTemp={forecast[0]?.tempMin}
-                  airQuality={weather.airQuality}
-                  airPollutants={weather.airPollutants}
-                  lat={weather.lat}
-                  lon={weather.lon}
-              
-                  unit={unit}
-                  onUnitChange={handleUnitChange}
-                />
-
-                <div className="mt-4">
-                  <h2 className="text-text-primary text-xl font-semibold mb-8 text-center">
-                    5-Day Forecast
-                  </h2>
-                  <div className="forecast-container">
-                    {forecast.map((forecast, index) => (
-                      <ForecastCard
-                        key={index}
-                        day={forecast.day}
-                        icon={forecast.icon}
-                        condition={forecast.condition}
-                        tempMax={getTemperatureInUnit(forecast.tempMax)}
-                        tempMin={getTemperatureInUnit(forecast.tempMin)}
-                        index={index}
-                        unit={unit}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-
-        <footer className="mt-16 text-center text-sm text-text-secondary flex flex-col items-center gap-4">
-          <Link
-            href="/about"
-            className="glass glass-hover px-6 py-3 rounded-lg text-text-primary no-underline transition-all duration-200 hover:scale-105"
+        {/* Favorites Section */}
+        {favorites.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mb-16"
           >
-            About WeatherWeb
-          </Link>
-          <a
-            href="https://github.com/taygotfound/weatherweb"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="glass glass-hover px-6 py-3 rounded-lg text-text-primary no-underline flex items-center justify-center gap-2 transition-all duration-200 hover:scale-105"
+            <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2">
+              <FiMapPin className="text-purple-400" />
+              Favorite Cities
+            </h2>
+            <motion.div
+              variants={container}
+              initial="hidden"
+              animate="show"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
+              {favorites.map((city) => (
+                <motion.div
+                  key={city}
+                  variants={item}
+                  className="glass glass-hover p-6 rounded-xl cursor-pointer 
+                           transition-all duration-200 hover:scale-105"
+                  onClick={() => router.push(`/weather?city=${encodeURIComponent(city)}`)}
+                >
+                  {loading.has(city) ? (
+                    <div className="flex items-center justify-center h-24">
+                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
+                    </div>
+                  ) : favoriteWeather[city] ? (
+                    <>
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h3 className="text-xl font-semibold">{city}</h3>
+                          <p className="text-white/70">
+                            {favoriteWeather[city].condition}
+                          </p>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeFavorite(city);
+                          }}
+                          className="p-2 rounded-full bg-white/10 hover:bg-white/20 
+                                   transition-colors duration-200"
+                        >
+                          <FiMapPin className="w-5 h-5" />
+                        </button>
+                      </div>
+                      <div className="text-3xl font-bold">
+                        {Math.round(favoriteWeather[city].temperature)}°C
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center text-white/70">
+                      Failed to load weather data
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </motion.div>
+          </motion.section>
+        )}
+
+        {/* Recent Searches */}
+        {recentSearches.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mb-16"
           >
-            <FiGithub size={16} />
-            View on GitHub
-          </a>
+            <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2">
+              <FiClock className="text-purple-400" />
+              Recent Searches
+            </h2>
+            <motion.div
+              variants={container}
+              initial="hidden"
+              animate="show"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
+              {recentSearches.map((city) => (
+                <motion.div
+                  key={city}
+                  variants={item}
+                  className="glass glass-hover p-6 rounded-xl cursor-pointer 
+                           transition-all duration-200 hover:scale-105"
+                  onClick={() => router.push(`/weather?city=${encodeURIComponent(city)}`)}
+                >
+                  <h3 className="text-xl font-semibold">{city}</h3>
+                </motion.div>
+              ))}
+            </motion.div>
+          </motion.section>
+        )}
+
+        {/* Footer */}
+        <footer className="mt-16 text-center text-sm text-white/60">
+          <div className="flex justify-center gap-4 mb-4">
+            <Link
+              href="/about"
+              className="glass glass-hover px-6 py-3 rounded-lg text-white no-underline 
+                       transition-all duration-200 hover:scale-105"
+            >
+              About WeatherWeb
+            </Link>
+            <a
+              href="https://github.com/taygotfound/weatherweb"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="glass glass-hover px-6 py-3 rounded-lg text-white no-underline 
+                       flex items-center justify-center gap-2 transition-all duration-200 
+                       hover:scale-105"
+            >
+              <FiGithub size={16} />
+              View on GitHub
+            </a>
+          </div>
+          <p>Powered by AI and ❤️</p>
         </footer>
       </main>
-    </>
+
+      {/* Tomato Character */}
+      <Tomato onChat={() => setIsChatOpen(true)} />
+
+      {/* AI Chat Widget */}
+      <AIChatWidget
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+      />
+    </div>
   );
 }

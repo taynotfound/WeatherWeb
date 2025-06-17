@@ -157,11 +157,11 @@ const WeatherDetails: React.FC<WeatherDetailsProps> = ({
               <span className="weather-detail-label">Wind</span>
             </div>
             <div className="weather-detail-value">
-              {windSpeed.toFixed(1)} m/s
+              {windSpeed ? (windSpeed / 3.6).toFixed(1) : '--'} m/s
             </div>
             {windGust && (
               <div className="weather-detail-subtext">
-                Gust: {windGust.toFixed(1)} m/s
+                Gust: {(windGust / 3.6).toFixed(1)} m/s
               </div>
             )}
           </motion.div>

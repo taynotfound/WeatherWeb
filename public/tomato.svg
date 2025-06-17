@@ -1,0 +1,49 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="90" fill="#ffede6" stroke="#ff6b6b" stroke-width="3"/>
+  
+  <!-- Bunny ears -->
+  <ellipse cx="75" cy="45" rx="12" ry="25" fill="#ff8a80" transform="rotate(-25 75 45)"/>
+  <ellipse cx="125" cy="45" rx="12" ry="25" fill="#ff8a80" transform="rotate(25 125 45)"/>
+  <ellipse cx="75" cy="45" rx="6" ry="15" fill="#ffb3ba" transform="rotate(-25 75 45)"/>
+  <ellipse cx="125" cy="45" rx="6" ry="15" fill="#ffb3ba" transform="rotate(25 125 45)"/>
+  
+  <!-- Head -->
+  <circle cx="100" cy="110" r="50" fill="#ff8a80"/>
+  
+  <!-- Eyes -->
+  <circle cx="88" cy="95" r="8" fill="#2c3e50"/>
+  <circle cx="112" cy="95" r="8" fill="#2c3e50"/>
+  <circle cx="90" cy="92" r="3" fill="white"/>
+  <circle cx="114" cy="92" r="3" fill="white"/>
+  
+  <!-- Nose -->
+  <ellipse cx="100" cy="110" rx="4" ry="3" fill="#e74c3c"/>
+  
+  <!-- Mouth -->
+  <path d="M 100 115 Q 95 120 90 118" stroke="#2c3e50" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M 100 115 Q 105 120 110 118" stroke="#2c3e50" stroke-width="2" fill="none" stroke-linecap="round"/>
+  
+  <!-- Cheeks -->
+  <circle cx="70" cy="115" r="8" fill="#ff6b6b" opacity="0.6"/>
+  <circle cx="130" cy="115" r="8" fill="#ff6b6b" opacity="0.6"/>
+  
+  <!-- Weather cloud accessory -->
+  <g transform="translate(140, 70) scale(0.8)">
+    <circle cx="0" cy="0" r="8" fill="#74b9ff"/>
+    <circle cx="12" cy="-2" r="10" fill="#74b9ff"/>
+    <circle cx="24" cy="0" r="8" fill="#74b9ff"/>
+    <circle cx="12" cy="8" r="12" fill="#74b9ff"/>
+  </g>
+  
+  <!-- Small raindrops -->
+  <circle cx="145" cy="95" r="2" fill="#0984e3"/>
+  <circle cx="152" cy="102" r="1.5" fill="#0984e3"/>
+  <circle cx="158" cy="90" r="1" fill="#0984e3"/>
+  
+  <!-- Whiskers -->
+  <line x1="60" y1="108" x2="75" y2="105" stroke="#2c3e50" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="60" y1="118" x2="75" y2="118" stroke="#2c3e50" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="125" y1="105" x2="140" y2="108" stroke="#2c3e50" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="125" y1="118" x2="140" y2="118" stroke="#2c3e50" stroke-width="1.5" stroke-linecap="round"/>
+</svg>
