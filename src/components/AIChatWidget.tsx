@@ -11,6 +11,47 @@ interface Message {
   timestamp?: Date;
 }
 
+interface WeatherAlert {
+  headline: string;
+  msgtype: string;
+  severity: string;
+  urgency: string;
+  areas: string;
+  category: string;
+  certainty: string;
+  event: string;
+  note: string;
+  effective: string;
+  expires: string;
+  desc: string;
+  instruction: string;
+}
+
+interface MoonPhase {
+  moonrise: string;
+  moonset: string;
+  moonPhase: string;
+  moonIllumination: string;
+}
+
+interface HourlyForecast {
+  time: string;
+  tempC: number;
+  tempF: number;
+  condition: string;
+  icon: string;
+  windKph: number;
+  humidity: number;
+  precipMm: number;
+  uv: number;
+}
+
+interface AdvancedWeatherData {
+  alerts: WeatherAlert[];
+  astronomy: MoonPhase;
+  hourlyForecast: HourlyForecast[];
+}
+
 interface AIChatWidgetProps {
   isOpen: boolean;
   onClose: () => void;
@@ -21,6 +62,7 @@ export default function AIChatWidget({ isOpen, onClose, weather }: AIChatWidgetP
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [advancedWeather, setAdvancedWeather] = useState<AdvancedWeatherData | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -30,6 +72,25 @@ export default function AIChatWidget({ isOpen, onClose, weather }: AIChatWidgetP
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Fetch advanced weather data when weather changes
+  useEffect(() => {
+    const fetchAdvancedWeather = async () => {
+      if (weather?.city) {
+        try {
+          const response = await fetch(`/api/weather/advanced?city=${encodeURIComponent(weather.city)}`);
+          if (response.ok) {
+            const data = await response.json();
+            setAdvancedWeather(data);
+          }
+        } catch (error) {
+          console.error('Error fetching advanced weather:', error);
+        }
+      }
+    };
+
+    fetchAdvancedWeather();
+  }, [weather?.city]);
 
   useEffect(() => {
     if (isOpen) {
@@ -68,6 +129,65 @@ export default function AIChatWidget({ isOpen, onClose, weather }: AIChatWidgetP
     setIsLoading(true);
 
     try {
+      // Build comprehensive weather context
+      let weatherContext = '';
+      
+      if (weather) {
+        weatherContext += `Current Weather in ${weather.city}:
+- Condition: ${weather.condition}
+- Temperature: ${Math.round(weather.temperature)}°C (feels like ${Math.round(weather.feelsLike)}°C)
+- Humidity: ${weather.humidity}%
+- Wind Speed: ${weather.windSpeed} m/s${weather.windGust ? ` (gusts up to ${weather.windGust} m/s)` : ''}
+- Visibility: ${weather.visibility} meters
+- Pressure: ${weather.pressure} hPa
+- Cloud Cover: ${weather.clouds}%
+- Sunrise: ${weather.sunrise}
+- Sunset: ${weather.sunset}
+- Min/Max Temperature: ${Math.round(weather.tempMin)}°C / ${Math.round(weather.tempMax)}°C`;
+
+        if (weather.airQuality) {
+          weatherContext += `\n- Air Quality Index: ${weather.airQuality}`;
+        }
+
+        if (weather.precipitation) {
+          weatherContext += `\n- Precipitation Probability: ${Math.round(weather.precipitation.probability * 100)}%
+- Rain: ${weather.precipitation.rain}mm
+- Snow: ${weather.precipitation.snow}mm
+- Total Precipitation: ${weather.precipitation.total}mm`;
+        }
+
+        if (weather.precipitationForecast) {
+          weatherContext += `\n- Next Rain: ${weather.precipitationForecast.nextRain ? weather.precipitationForecast.nextRain.time : 'No rain expected'}
+- Highest Precipitation Chance: ${weather.precipitationForecast.highestChance.time} (${Math.round(weather.precipitationForecast.highestChance.probability * 100)}%)
+- Lowest Precipitation Chance: ${weather.precipitationForecast.lowestChance.time} (${Math.round(weather.precipitationForecast.lowestChance.probability * 100)}%)`;
+        }
+      }
+
+      if (advancedWeather) {
+        if (advancedWeather.alerts.length > 0) {
+          weatherContext += `\n\nWeather Alerts:`;
+          advancedWeather.alerts.forEach((alert, index) => {
+            weatherContext += `\n- Alert ${index + 1}: ${alert.headline} (${alert.severity} severity, ${alert.certainty} certainty)
+  Event: ${alert.event}
+  Effective: ${alert.effective}
+  Expires: ${alert.expires}
+  Description: ${alert.desc}`;
+          });
+        }
+
+        weatherContext += `\n\nAstronomy:
+- Moon Phase: ${advancedWeather.astronomy.moonPhase}
+- Moon Illumination: ${advancedWeather.astronomy.moonIllumination}%
+- Moonrise: ${advancedWeather.astronomy.moonrise}
+- Moonset: ${advancedWeather.astronomy.moonset}`;
+
+        weatherContext += `\n\nHourly Forecast (next 24 hours):`;
+        advancedWeather.hourlyForecast.slice(0, 24).forEach((hour, index) => {
+          const time = new Date(hour.time).toLocaleTimeString('en-US', { hour: 'numeric', hour12: true });
+          weatherContext += `\n- ${time}: ${hour.condition}, ${hour.tempC}°C, ${hour.humidity}% humidity, ${hour.precipMm}mm precipitation, UV index ${hour.uv}`;
+        });
+      }
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
@@ -77,14 +197,11 @@ export default function AIChatWidget({ isOpen, onClose, weather }: AIChatWidgetP
           messages: [
             {
               role: 'system',
-              content: `You are Tomato, a friendly and knowledgeable weather assistant. You have access to the following weather data for ${weather?.city}: 
-              - Current condition: ${weather?.condition}
-              - Temperature: ${weather?.temperature}°C
-              - Humidity: ${weather?.humidity}%
-              - Wind Speed: ${weather?.windSpeed} m/s
-              - Visibility: ${weather?.visibility} meters
-              - Air Quality: ${weather?.airQuality}
-              Be helpful, friendly, and occasionally make weather-related jokes or puns.`
+              content: `You are Tomato, a friendly and knowledgeable weather assistant. You have access to comprehensive weather data for ${weather?.city || 'the current location'}. 
+
+${weatherContext}
+
+Be helpful, friendly, and occasionally make weather-related jokes or puns. Use the detailed weather information to provide accurate and helpful responses about current conditions, forecasts, alerts, and recommendations.`
             },
             ...messages.map(msg => ({ role: msg.role, content: msg.content })),
             { role: 'user', content: userMessage }
