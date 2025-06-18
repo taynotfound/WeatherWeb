@@ -54,6 +54,47 @@ export default function About() {
             It features a beautiful glassmorphic design and intuitive user interface to help you stay informed about weather conditions.
           </p>
 
+          <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
+            <a href="https://wakatime.com/badge/user/c79782f6-783d-42c2-aa21-a35d975705b5/project/0afe6213-bdc2-4d51-952c-b5f356273469">
+              <img src="https://wakatime.com/badge/user/c79782f6-783d-42c2-aa21-a35d975705b5/project/0afe6213-bdc2-4d51-952c-b5f356273469.svg" alt="wakatime" />
+            </a>
+            <p style={{ 
+              fontSize: '0.875rem', 
+              color: 'var(--text-secondary)', 
+              marginTop: '0.5rem',
+              fontStyle: 'italic'
+            }}>
+              Time of my life wasted tracking time... 🤦‍♂️
+            </p>
+          </div>
+
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '1rem', marginTop: '2rem' }}>
+            Technologies Used
+          </h2>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '2rem' }}>
+            <div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 500, marginBottom: '0.5rem' }}>Frontend</h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                Next.js 15, React 19, TypeScript, Tailwind CSS, Framer Motion, React Icons
+              </p>
+            </div>
+
+            <div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 500, marginBottom: '0.5rem' }}>APIs & Services</h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                OpenWeather API, RainViewer API, Open-Meteo API, Vercel Deployment
+              </p>
+            </div>
+
+            <div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 500, marginBottom: '0.5rem' }}>Development Tools</h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                ESLint, Prettier, Git, VS Code, WakaTime (for that sweet time tracking)
+              </p>
+            </div>
+          </div>
+
           <h2 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '1rem', marginTop: '2rem' }}>
             Data Sources
           </h2>
@@ -103,6 +144,10 @@ export default function About() {
             <li>Detailed weather metrics (humidity, wind, visibility, etc.)</li>
             <li>Temperature unit conversion (Celsius/Fahrenheit)</li>
             <li>Responsive design for all devices</li>
+            <li>Glassmorphic UI design</li>
+            <li>Dark/Light theme support</li>
+            <li>Favorites functionality</li>
+            <li>AI-powered weather insights</li>
           </ul>
         </div>
       </motion.div>
