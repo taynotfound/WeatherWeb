@@ -627,7 +627,6 @@ body {
     rgba(255, 255, 255, 0.05) 50%,
     rgba(255, 255, 255, 0.1) 100%
   );
-  backdrop-filter: blur(4px);
   animation: melt-drip 3s ease-in-out infinite;
 }
 
