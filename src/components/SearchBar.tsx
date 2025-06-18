@@ -151,7 +151,11 @@ const SearchBar: React.FC<SearchBarProps> = ({ onCitySelect }) => {
           right: 0,
           borderRadius: '0.75rem',
           overflow: 'hidden',
-          zIndex: 10
+          zIndex: 10,
+          background: 'rgba(15, 23, 42, 0.95)',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(139, 92, 246, 0.2)',
+          boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.4)'
         }}>
           <style jsx>{`
             .suggestion-button {
@@ -165,7 +169,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onCitySelect }) => {
               transition: background-color 0.2s;
             }
             .suggestion-button:hover {
-              background-color: rgba(255, 255, 255, 0.1);
+              background-color: rgba(139, 92, 246, 0.2);
             }
           `}</style>
           {suggestions.map((suggestion, index) => (

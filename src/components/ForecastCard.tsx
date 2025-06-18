@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { FiThermometer, FiDroplet, FiWind, FiSunrise, FiSunset, FiMoon } from 'react-icons/fi';
-import { getWeatherIcon } from '@/utils/weatherIcons';
+import { getWeatherIcon, displayTemperature } from '@/utils/weatherIcons';
 import { useTheme } from '@/context/ThemeContext';
 
 interface ForecastCardProps {
@@ -222,10 +222,10 @@ export default function ForecastCard({
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
               <span className="text-lg sm:text-xl font-bold text-white">
-                {Math.round(tempMax)}°
+                {Math.round(displayTemperature(tempMax, unit))}°
               </span>
               <span className="text-sm sm:text-base text-white/60">
-                {Math.round(tempMin)}°
+                {Math.round(displayTemperature(tempMin, unit))}°
               </span>
             </div>
             <span className="text-xs sm:text-sm text-white/60">{unit}</span>

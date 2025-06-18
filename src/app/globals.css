@@ -216,6 +216,20 @@ body {
   .weather-detail-label {
     font-size: 0.875rem;
   }
+
+  /* Autocomplete mobile styles */
+  .suggestion-button {
+    padding: 1rem !important;
+    font-size: 1rem !important;
+  }
+  
+  .suggestion-button div {
+    font-size: 1rem !important;
+  }
+  
+  .suggestion-button div div:last-child {
+    font-size: 0.875rem !important;
+  }
 }
 
 @media (max-width: 480px) {

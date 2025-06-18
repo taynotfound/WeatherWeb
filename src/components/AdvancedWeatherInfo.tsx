@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FiAlertTriangle, FiMoon, FiSun, FiWind, FiDroplet, FiThermometer } from 'react-icons/fi';
 import { Line } from 'react-chartjs-2';
@@ -14,6 +14,7 @@ import {
   Filler
 } from 'chart.js';
 import Image from 'next/image';
+import { displayTemperature } from '@/utils/weatherIcons';
 
 ChartJS.register(
   CategoryScale,
@@ -71,6 +72,7 @@ const AdvancedWeatherInfo: React.FC<AdvancedWeatherInfoProps> = ({ city }) => {
   const [hourlyForecast, setHourlyForecast] = useState<HourlyForecast[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [unit, setUnit] = useState<'C' | 'F'>('C');
 
   useEffect(() => {
     const fetchAdvancedWeather = async () => {
@@ -285,8 +287,19 @@ const AdvancedWeatherInfo: React.FC<AdvancedWeatherInfoProps> = ({ city }) => {
       )}
 
       {/* Hourly Forecast Chart */}
-      <div className="glass p-6 rounded-2xl mb-6">
-        <h3 className="text-lg font-bold text-white mb-4">24-Hour Forecast</h3>
+      <div className="glass p-6 rounded-2xl">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-semibold text-gradient">24-Hour Forecast</h3>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setUnit(unit === 'C' ? 'F' : 'C')}
+            className="px-3 py-1 rounded-full bg-white/10 text-white text-sm hover:bg-white/20 
+                     transition-colors duration-200"
+          >
+            °{unit}
+          </motion.button>
+        </div>
         <div className="w-full max-w-3xl mx-auto" style={{ height: '300px' }}>
           <Line data={chartData} options={chartOptions} />
         </div>
@@ -306,7 +319,7 @@ const AdvancedWeatherInfo: React.FC<AdvancedWeatherInfoProps> = ({ city }) => {
                 className="object-contain"
               />
             </div>
-            <p className="text-lg font-bold text-white">{hour.tempC}°C</p>
+            <p className="text-lg font-bold text-white">{displayTemperature(hour.tempC, unit)}°{unit === 'C' ? 'C' : 'F'}</p>
             <p className="text-sm text-white/70 capitalize">{hour.condition}</p>
             <div className="mt-2 flex justify-center gap-3 text-sm text-white/60">
               {hour.precipMm > 0 && (

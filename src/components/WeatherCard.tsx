@@ -4,6 +4,7 @@ import { FiDroplet, FiWind, FiSunrise, FiSunset, FiClock, FiTrendingUp, FiTrendi
 import ReactCountryFlag from 'react-country-flag';
 import Image from 'next/image';
 import { useWeather } from './WeatherProvider';
+import { displayTemperature } from '@/utils/weatherIcons';
 
 interface WeatherCardProps {
   city: string;
@@ -223,7 +224,7 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
             </div>
             <div>
               <h3 className="text-3xl sm:text-4xl font-bold text-white mb-1">
-                {Math.round(temperature)}°{unit}
+                {Math.round(displayTemperature(temperature, unit))}°{unit}
               </h3>
               <p className="text-white/60 capitalize text-sm sm:text-base">{condition}</p>
             </div>
@@ -238,7 +239,7 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
                 <FiThermometer />
                 <span className="text-xs sm:text-sm">Feels Like</span>
               </div>
-              <p className="text-white font-medium text-sm sm:text-base">{Math.round(feelsLike)}°{unit}</p>
+              <p className="text-white font-medium text-sm sm:text-base">{Math.round(displayTemperature(feelsLike, unit))}°{unit}</p>
             </motion.div>
 
             <motion.div
@@ -319,8 +320,8 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
             </div>
           </div>
           <div className="flex items-center justify-between mt-2">
-            <p className="text-white font-medium text-sm sm:text-base">{Math.round(tempMin)}°{unit}</p>
-            <p className="text-white font-medium text-sm sm:text-base">{Math.round(tempMax)}°{unit}</p>
+            <p className="text-white font-medium text-sm sm:text-base">{Math.round(displayTemperature(tempMin, unit))}°{unit}</p>
+            <p className="text-white font-medium text-sm sm:text-base">{Math.round(displayTemperature(tempMax, unit))}°{unit}</p>
           </div>
         </motion.div>
 

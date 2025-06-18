@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiWind, FiDroplet, FiEye, FiCloud, FiThermometer, FiClock } from 'react-icons/fi';
+import { FiWind, FiDroplet, FiEye, FiCloud, FiThermometer, FiClock, FiMapPin } from 'react-icons/fi';
 import { WiDaySunny, WiNightClear } from 'react-icons/wi';
 import { MdAir } from 'react-icons/md';
 import 'leaflet/dist/leaflet.css';
 import dynamic from 'next/dynamic';
 import type { ComponentType } from 'react';
 import { WeatherData } from '@/services/weatherApi';
+import { displayTemperature } from '@/utils/weatherIcons';
 
 interface WeatherMapProps {
   weather: WeatherData;
@@ -143,7 +144,7 @@ const WeatherDetails: React.FC<WeatherDetailsProps> = ({
               <span className="weather-detail-label">Feels Like</span>
             </div>
             <div className="weather-detail-value">
-              {feelsLike}°{unit}
+              {displayTemperature(feelsLike, unit as 'C' | 'F')}°{unit}
             </div>
           </motion.div>
 
