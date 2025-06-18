@@ -6,7 +6,7 @@ import { FavoritesProvider } from "@/components/FavoritesContext";
 import WeatherProvider from "@/components/WeatherProvider";
 import Footer from '@/components/Footer';
 import { ThemeProvider } from '@/context/ThemeContext';
-
+import { Analytics } from "@vercel/analytics/next"
 
 const inter = Inter({ subsets: ["latin"], variable: '--font-inter' });
 
@@ -41,6 +41,7 @@ export default function RootLayout({
         <Script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4" strategy="afterInteractive" />
       </head>
       <body className={inter.className}>
+      <Analytics/>
         <ThemeProvider>
           <WeatherProvider>
             <FavoritesProvider>
