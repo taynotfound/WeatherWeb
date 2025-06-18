@@ -6,11 +6,10 @@ import { MdAir } from 'react-icons/md';
 import 'leaflet/dist/leaflet.css';
 import dynamic from 'next/dynamic';
 import type { ComponentType } from 'react';
+import { WeatherData } from '@/services/weatherApi';
 
 interface WeatherMapProps {
-  center: [number, number];
-  radarUrl: string;
-  hasRadarData: boolean;
+  weather: WeatherData;
 }
 
 const Map = dynamic<WeatherMapProps>(
@@ -277,9 +276,37 @@ const WeatherDetails: React.FC<WeatherDetailsProps> = ({
         {typeof window !== 'undefined' && (
           <div style={{ height: 'calc(100% - 2rem)', width: '100%', position: 'relative' }}>
             <Map
-              center={[lat, lon]}
-              radarUrl={getRadarUrl()}
-              hasRadarData={!!currentFrame}
+              weather={{
+                city: '',
+                country: '',
+                temperature: feelsLike,
+                condition: '',
+                icon: '',
+                humidity: humidity,
+                windSpeed: windSpeed,
+                windGust: windGust,
+                windDeg: windDeg,
+                sunrise: '',
+                sunset: '',
+                sunriseTimestamp: 0,
+                sunsetTimestamp: 0,
+                visibility: visibility,
+                clouds: clouds,
+                dt: lastUpdate,
+                feelsLike: feelsLike,
+                pressure: pressure,
+                precipitation: precipitation,
+                airQuality: airQuality,
+                airPollutants: airPollutants,
+                lat: lat,
+                lon: lon,
+                precipitationForecast: undefined,
+                currentTime: lastUpdate,
+                timezone: 0,
+                tempMin: 0,
+                tempMax: 0,
+                isDay: isDay
+              }}
             />
             <div style={{
               position: 'absolute',
