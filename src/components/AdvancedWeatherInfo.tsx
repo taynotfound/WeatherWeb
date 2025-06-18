@@ -13,6 +13,7 @@ import {
   Legend,
   Filler
 } from 'chart.js';
+import Image from 'next/image';
 
 ChartJS.register(
   CategoryScale,
@@ -297,7 +298,14 @@ const AdvancedWeatherInfo: React.FC<AdvancedWeatherInfoProps> = ({ city }) => {
             <p className="text-sm font-medium text-white/90">
               {new Date(hour.time).toLocaleTimeString('en-US', { hour: 'numeric' })}
             </p>
-            <img src={hour.icon} alt={hour.condition} className="w-12 h-12 mx-auto my-2" />
+            <div className="relative w-12 h-12 mx-auto my-2">
+              <Image
+                src={hour.icon}
+                alt={hour.condition}
+                fill
+                className="object-contain"
+              />
+            </div>
             <p className="text-lg font-bold text-white">{hour.tempC}°C</p>
             <p className="text-sm text-white/70 capitalize">{hour.condition}</p>
             <div className="mt-2 flex justify-center gap-3 text-sm text-white/60">

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { WeatherData } from '@/services/weatherApi';
@@ -18,9 +18,11 @@ const WeatherMap = ({ weather }: WeatherMapProps) => {
   const defaultCenter: [number, number] = [51.1657, 10.4515]; // Center of Germany
 
   // Use weather coordinates if available, otherwise use default
-  const center: [number, number] = weather?.latitude && weather?.longitude 
-    ? [weather.latitude, weather.longitude]
-    : defaultCenter;
+  const center = useMemo(() => {
+    return weather?.lat && weather?.lon 
+      ? [weather.lat, weather.lon] as [number, number]
+      : defaultCenter;
+  }, [weather?.lat, weather?.lon]);
 
   useEffect(() => {
     if (!mapRef.current) {

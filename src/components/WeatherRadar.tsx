@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX } from 'react-icons/fi';
+import Image from 'next/image';
 
 interface WeatherRadarProps {
   isOpen: boolean;
@@ -19,12 +20,6 @@ const WeatherRadar: React.FC<WeatherRadarProps> = ({ isOpen, onClose, lat, lon }
   const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (isOpen) {
-      fetchRadarData();
-    }
-  }, [isOpen]);
 
   const fetchRadarData = async () => {
     try {
@@ -51,6 +46,12 @@ const WeatherRadar: React.FC<WeatherRadarProps> = ({ isOpen, onClose, lat, lon }
       onClose(); // Close the radar view when there's an error
     }
   };
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchRadarData();
+    }
+  }, [isOpen, fetchRadarData]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -103,15 +104,18 @@ const WeatherRadar: React.FC<WeatherRadarProps> = ({ isOpen, onClose, lat, lon }
 
           <div className="relative aspect-video">
             {frames.length > 0 && (
-              <img
-                src={getTileUrl(frames[currentFrameIndex])}
-                alt="Weather Radar"
-                className="w-full h-full object-cover rounded"
-                onError={() => {
-                  setError('Failed to load radar image');
-                  onClose();
-                }}
-              />
+              <div className="relative w-full h-full">
+                <Image
+                  src={getTileUrl(frames[currentFrameIndex])}
+                  alt="Weather Radar"
+                  fill
+                  className="object-cover rounded"
+                  onError={() => {
+                    setError('Failed to load radar image');
+                    onClose();
+                  }}
+                />
+              </div>
             )}
           </div>
 

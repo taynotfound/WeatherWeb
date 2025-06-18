@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { FavoritesProvider } from "@/components/FavoritesContext";
 import WeatherProvider from "@/components/WeatherProvider";
@@ -37,7 +38,7 @@ export default function RootLayout({
         <link rel="icon" href="/tomato.svg" />
         <link rel="apple-touch-icon" href="/tomato.svg" />
         <meta name="theme-color" content="#0f172a" />
-        <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+        <Script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4" strategy="afterInteractive" />
       </head>
       <body className={inter.className}>
         <ThemeProvider>

@@ -58,7 +58,7 @@ export default function HomePage() {
         fetchWeather(city);
       }
     });
-  }, [favorites, fetchWeather]);
+  }, [favorites, fetchWeather, favoriteWeather]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
