@@ -178,12 +178,12 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`glass p-6 rounded-2xl ${getFrostEffect(temperature)}`}
+        className={`glass p-4 sm:p-6 rounded-2xl ${getFrostEffect(temperature)}`}
       >
         {/* City and Country */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
               {city}
               <ReactCountryFlag
                 countryCode={country}
@@ -195,7 +195,7 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
                 }}
               />
             </h2>
-            <p className="text-white/60 text-sm">
+            <p className="text-white/60 text-xs sm:text-sm">
               Last updated: {new Date(lastUpdate * 1000).toLocaleTimeString()}
             </p>
           </div>
@@ -211,9 +211,9 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
         </div>
 
         {/* Main Weather Info */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div className="flex items-center gap-4">
-            <div className="relative w-24 h-24">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="relative w-20 h-20 sm:w-24 sm:h-24">
               <Image
                 src={`https://openweathermap.org/img/wn/${icon}@2x.png`}
                 alt={condition}
@@ -222,23 +222,23 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
               />
             </div>
             <div>
-              <h3 className="text-4xl font-bold text-white mb-1">
+              <h3 className="text-3xl sm:text-4xl font-bold text-white mb-1">
                 {Math.round(temperature)}°{unit}
               </h3>
-              <p className="text-white/60 capitalize">{condition}</p>
+              <p className="text-white/60 capitalize text-sm sm:text-base">{condition}</p>
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
             <motion.div
               whileHover={{ scale: 1.02 }}
               className="glass-hover p-3 rounded-xl"
             >
               <div className="flex items-center gap-2 text-white/60 mb-1">
                 <FiThermometer />
-                <span className="text-sm">Feels Like</span>
+                <span className="text-xs sm:text-sm">Feels Like</span>
               </div>
-              <p className="text-white font-medium">{Math.round(feelsLike)}°{unit}</p>
+              <p className="text-white font-medium text-sm sm:text-base">{Math.round(feelsLike)}°{unit}</p>
             </motion.div>
 
             <motion.div
@@ -247,9 +247,9 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
             >
               <div className="flex items-center gap-2 text-white/60 mb-1">
                 <FiDroplet />
-                <span className="text-sm">Humidity</span>
+                <span className="text-xs sm:text-sm">Humidity</span>
               </div>
-              <p className="text-white font-medium">{humidity}%</p>
+              <p className="text-white font-medium text-sm sm:text-base">{humidity}%</p>
             </motion.div>
 
             <motion.div
@@ -258,9 +258,9 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
             >
               <div className="flex items-center gap-2 text-white/60 mb-1">
                 <FiWind />
-                <span className="text-sm">Wind</span>
+                <span className="text-xs sm:text-sm">Wind</span>
               </div>
-              <p className="text-white font-medium">{windSpeed} m/s</p>
+              <p className="text-white font-medium text-sm sm:text-base">{windSpeed} m/s</p>
             </motion.div>
 
             <motion.div
@@ -269,9 +269,9 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
             >
               <div className="flex items-center gap-2 text-white/60 mb-1">
                 <FiEye />
-                <span className="text-sm">Visibility</span>
+                <span className="text-xs sm:text-sm">Visibility</span>
               </div>
-              <p className="text-white font-medium">
+              <p className="text-white font-medium text-sm sm:text-base">
                 {visibility >= 1000 ? `${(visibility / 1000).toFixed(1)}km` : `${visibility}m`}
               </p>
             </motion.div>
@@ -279,48 +279,48 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
         </div>
 
         {/* Sunrise and Sunset */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
           <motion.div
             whileHover={{ scale: 1.02 }}
-            className="glass-hover p-4 rounded-xl"
+            className="glass-hover p-3 sm:p-4 rounded-xl"
           >
             <div className="flex items-center gap-2 text-white/60 mb-2">
               <FiSunrise className="text-yellow-400" />
-              <span>Sunrise</span>
+              <span className="text-sm">Sunrise</span>
             </div>
-            <p className="text-white font-medium">{sunrise}</p>
+            <p className="text-white font-medium text-sm sm:text-base">{sunrise}</p>
           </motion.div>
 
           <motion.div
             whileHover={{ scale: 1.02 }}
-            className="glass-hover p-4 rounded-xl"
+            className="glass-hover p-3 sm:p-4 rounded-xl"
           >
             <div className="flex items-center gap-2 text-white/60 mb-2">
               <FiSunset className="text-orange-400" />
-              <span>Sunset</span>
+              <span className="text-sm">Sunset</span>
             </div>
-            <p className="text-white font-medium">{sunset}</p>
+            <p className="text-white font-medium text-sm sm:text-base">{sunset}</p>
           </motion.div>
         </div>
 
         {/* Temperature Range */}
         <motion.div
           whileHover={{ scale: 1.02 }}
-          className="glass-hover p-4 rounded-xl mb-6"
+          className="glass-hover p-3 sm:p-4 rounded-xl mb-4 sm:mb-6"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-white/60">
               <FiTrendingDown className="text-blue-400" />
-              <span>Min</span>
+              <span className="text-sm">Min</span>
             </div>
             <div className="flex items-center gap-2 text-white/60">
               <FiTrendingUp className="text-red-400" />
-              <span>Max</span>
+              <span className="text-sm">Max</span>
             </div>
           </div>
           <div className="flex items-center justify-between mt-2">
-            <p className="text-white font-medium">{Math.round(tempMin)}°{unit}</p>
-            <p className="text-white font-medium">{Math.round(tempMax)}°{unit}</p>
+            <p className="text-white font-medium text-sm sm:text-base">{Math.round(tempMin)}°{unit}</p>
+            <p className="text-white font-medium text-sm sm:text-base">{Math.round(tempMax)}°{unit}</p>
           </div>
         </motion.div>
 
@@ -329,10 +329,10 @@ const WeatherCard: React.FC<WeatherCardProps> = ({
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="glass p-6 rounded-2xl"
+            className="glass p-4 sm:p-6 rounded-2xl"
           >
-            <h3 className="text-lg font-bold text-white mb-4">Precipitation Forecast</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <h3 className="text-base sm:text-lg font-bold text-white mb-4">Precipitation Forecast</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               {precipitationForecast.nextRain && precipitationForecast.nextRain.probability > 0 && (
                 <motion.div
                   whileHover={{ scale: 1.02 }}

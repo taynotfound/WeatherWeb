@@ -128,12 +128,12 @@ const WeatherDetails: React.FC<WeatherDetailsProps> = ({
   return (
     <>
       <motion.div
-        className="weather-details-container glass"
+        className="weather-details-container glass p-4 sm:p-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
       >
-        <div className="weather-details-grid">
+        <div className="weather-details-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
           <motion.div
             className="weather-detail-card glass-hover"
             whileHover={{ scale: 1.02 }}
@@ -251,14 +251,13 @@ const WeatherDetails: React.FC<WeatherDetailsProps> = ({
         
       </motion.div>
       <motion.div
-        className="glass"
+        className="glass p-4 sm:p-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.3 }}
         style={{
-          padding: '2rem',
           borderRadius: '1rem',
-          height: '400px',
+          height: '300px',
           position: 'relative',
           overflow: 'hidden',
           width: '100%'
@@ -271,7 +270,7 @@ const WeatherDetails: React.FC<WeatherDetailsProps> = ({
           marginBottom: '1rem',
           color: 'var(--text-secondary)'
         }}>
-          <span className="text-gradient" style={{ fontSize: '1.25rem', fontWeight: 500 }}>Weather Radar</span>
+          <span className="text-gradient" style={{ fontSize: '1.125rem', fontWeight: 500 }}>Weather Radar</span>
         </div>
         {typeof window !== 'undefined' && (
           <div style={{ height: 'calc(100% - 2rem)', width: '100%', position: 'relative' }}>

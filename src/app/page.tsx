@@ -84,16 +84,16 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen">
-      <main className="container mx-auto px-4 py-12">
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-16"
+          className="text-center mb-12 sm:mb-16"
         >
-          <h1 className="text-6xl font-bold mb-4 text-gradient">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 text-gradient">
             WeatherWeb
           </h1>
-          <p className="text-xl text-white/70">
+          <p className="text-lg sm:text-xl text-white/70">
             Your AI-powered weather companion
           </p>
         </motion.div>
@@ -102,7 +102,7 @@ export default function HomePage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="max-w-2xl mx-auto mb-16"
+          className="max-w-2xl mx-auto mb-12 sm:mb-16"
         >
           <SearchBar
             onCitySelect={(city) => {
@@ -118,9 +118,9 @@ export default function HomePage() {
           <motion.section
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="mb-16"
+            className="mb-12 sm:mb-16"
           >
-            <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2">
+            <h2 className="text-xl sm:text-2xl font-semibold mb-6 flex items-center gap-2">
               <FiMapPin className="text-purple-400" />
               Favorite Cities
             </h2>
@@ -128,7 +128,7 @@ export default function HomePage() {
               variants={container}
               initial="hidden"
               animate="show"
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
             >
               {favorites.map((city) => (
                 <motion.div
@@ -182,9 +182,9 @@ export default function HomePage() {
           <motion.section
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="mb-16"
+            className="mb-12 sm:mb-16"
           >
-            <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2">
+            <h2 className="text-xl sm:text-2xl font-semibold mb-6 flex items-center gap-2">
               <FiClock className="text-purple-400" />
               Recent Searches
             </h2>
@@ -192,17 +192,17 @@ export default function HomePage() {
               variants={container}
               initial="hidden"
               animate="show"
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
             >
               {recentSearches.map((city) => (
                 <motion.div
                   key={city}
                   variants={item}
-                  className="glass glass-hover p-6 rounded-xl cursor-pointer 
+                  className="glass glass-hover p-4 sm:p-6 rounded-xl cursor-pointer 
                            transition-all duration-200 hover:scale-105"
                   onClick={() => router.push(`/weather?city=${encodeURIComponent(city)}`)}
                 >
-                  <h3 className="text-xl font-semibold">{city}</h3>
+                  <h3 className="text-lg sm:text-xl font-semibold">{city}</h3>
                 </motion.div>
               ))}
             </motion.div>
@@ -210,11 +210,11 @@ export default function HomePage() {
         )}
 
         {/* Footer */}
-        <footer className="mt-16 text-center text-sm text-white/60">
-          <div className="flex justify-center gap-4 mb-4">
+        <footer className="mt-12 sm:mt-16 text-center text-sm text-white/60">
+          <div className="flex flex-col sm:flex-row justify-center gap-4 mb-4">
             <Link
               href="/about"
-              className="glass glass-hover px-6 py-3 rounded-lg text-white no-underline 
+              className="glass glass-hover px-4 sm:px-6 py-3 rounded-lg text-white no-underline 
                        transition-all duration-200 hover:scale-105"
             >
               About WeatherWeb
@@ -223,7 +223,7 @@ export default function HomePage() {
               href="https://github.com/taygotfound/weatherweb"
               target="_blank"
               rel="noopener noreferrer"
-              className="glass glass-hover px-6 py-3 rounded-lg text-white no-underline 
+              className="glass glass-hover px-4 sm:px-6 py-3 rounded-lg text-white no-underline 
                        flex items-center justify-center gap-2 transition-all duration-200 
                        hover:scale-105"
             >

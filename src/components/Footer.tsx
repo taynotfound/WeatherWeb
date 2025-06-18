@@ -11,11 +11,11 @@ export default function Footer() {
     <motion.footer 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="relative mt-16 py-8 border-t border-white/10"
+      className="relative mt-12 sm:mt-16 py-6 sm:py-8 border-t border-white/10"
     >
-      <div className="container mx-auto px-4">
-        <div className="flex flex-col items-center justify-center gap-4">
-          <div className="flex items-center gap-6">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col items-center justify-center gap-3 sm:gap-4">
+          <div className="flex items-center gap-4 sm:gap-6">
             <motion.a
               href="https://github.com/taynotfound"
               target="_blank"
@@ -24,7 +24,7 @@ export default function Footer() {
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
             >
-              <FiGithub size={24} />
+              <FiGithub size={20} className="sm:w-6 sm:h-6" />
             </motion.a>
             <motion.a
               href="https://discord.gg/C2bAXnYXzm"
@@ -34,7 +34,7 @@ export default function Footer() {
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
             >
-              <FaDiscord size={24} />
+              <FaDiscord size={20} className="sm:w-6 sm:h-6" />
             </motion.a>
             <motion.a
               href="https://taynotfound.com"
@@ -44,11 +44,11 @@ export default function Footer() {
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
             >
-              <FiGlobe size={24} />
+              <FiGlobe size={20} className="sm:w-6 sm:h-6" />
             </motion.a>
           </div>
           
-          <div className="flex items-center gap-2 text-white/70">
+          <div className="flex items-center gap-2 text-white/70 text-sm sm:text-base">
             <span>Created with</span>
             <motion.div
               animate={{ scale: [1, 1.2, 1] }}
@@ -59,7 +59,7 @@ export default function Footer() {
             <span>by tay maerz</span>
           </div>
           
-          <p className="text-sm text-white/50">
+          <p className="text-xs sm:text-sm text-white/50">
             © {currentYear} WeatherWeb. All rights reserved.
           </p>
         </div>

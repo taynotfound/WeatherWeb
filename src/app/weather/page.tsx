@@ -169,18 +169,18 @@ function WeatherContent() {
         )}
       </div>
 
-      <main className="container mx-auto px-4 py-8 relative z-10">
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 relative z-10">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6 sm:mb-8">
           <Link
             href="/"
-            className="glass glass-hover px-4 py-2 rounded-lg text-white no-underline 
-                     transition-all duration-200 hover:scale-105 text-shadow-md"
+            className="glass glass-hover px-3 sm:px-4 py-2 rounded-lg text-white no-underline 
+                     transition-all duration-200 hover:scale-105 text-shadow-md text-sm sm:text-base"
           >
             <FiArrowLeft className="inline mr-2" />
             Back
           </Link>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
@@ -206,9 +206,9 @@ function WeatherContent() {
         </div>
 
         {/* Weather Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <div className="flex flex-col gap-8">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 sm:gap-8">
+          <div className="xl:col-span-2">
+            <div className="flex flex-col gap-6 sm:gap-8">
               <WeatherCard
                 city={weather.city}
                 country={weather.country}
@@ -261,15 +261,15 @@ function WeatherContent() {
               />
 
               {/* Advanced Weather Info */}
-              <div className="mt-8">
+              <div className="mt-6 sm:mt-8">
                 <AdvancedWeatherInfo city={weather.city} />
               </div>
 
-              <div className="mt-4">
-                <h2 className="text-2xl font-semibold mb-8 text-center text-white text-shadow-lg">
+              <div className="mt-4 sm:mt-6">
+                <h2 className="text-xl sm:text-2xl font-semibold mb-6 sm:mb-8 text-center text-white text-shadow-lg">
                   5-Day Forecast
                 </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
                   {forecast.map((forecast, index) => (
                     <ForecastCard
                       key={index}
@@ -288,8 +288,8 @@ function WeatherContent() {
             </div>
           </div>
 
-          <div className="lg:col-span-1">
-            <div className="sticky top-8">
+          <div className="xl:col-span-1">
+            <div className="sticky top-6 sm:top-8">
               <AIRecommendations weather={weather} />
             </div>
           </div>

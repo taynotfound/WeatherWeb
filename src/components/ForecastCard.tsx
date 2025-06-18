@@ -109,7 +109,7 @@ export default function ForecastCard({
       initial="initial"
       animate="animate"
       whileHover="hover"
-      className={`glass glass-hover p-6 rounded-xl backdrop-blur-xl relative overflow-hidden 
+      className={`glass glass-hover p-3 sm:p-6 rounded-xl backdrop-blur-xl relative overflow-hidden 
                  ${getFrostEffect(tempMax)} ${getWeatherBackground()} ${theme === 'dark' ? 'dark' : ''}`}
     >
       {/* Dynamic background gradient */}
@@ -195,108 +195,76 @@ export default function ForecastCard({
       </div>
 
       <div className="relative z-10">
-        <div className="flex justify-between items-start mb-4">
+        <div className="flex justify-between items-start mb-3 sm:mb-4">
           <motion.div
             initial={{ x: -20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="text-center"
           >
-            <h3 className="text-xl font-semibold text-white drop-shadow-lg">{day}</h3>
-            <p className="text-white/90 text-sm capitalize mt-1 drop-shadow-md">{condition}</p>
-          </motion.div>
-          <motion.div 
-            className="w-16 h-16"
-            variants={iconVariants}
-          >
-            <WeatherIcon />
+            <h3 className="text-sm sm:text-base font-semibold text-white mb-1">
+              {day}
+            </h3>
+            <p className="text-xs sm:text-sm text-white/60 capitalize">
+              {condition}
+            </p>
           </motion.div>
         </div>
 
-        <motion.div 
-          className="flex items-center justify-between mb-6"
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.3 }}
-        >
-          <div className="flex items-baseline gap-2">
-            <motion.span 
-              className="text-3xl font-bold text-white drop-shadow-lg"
-              whileHover={{ scale: 1.1 }}
-            >
-              {Math.round(tempMax)}°
-            </motion.span>
-            <motion.span 
-              className="text-lg text-white/90 drop-shadow-md"
-              whileHover={{ scale: 1.05 }}
-            >
-              {Math.round(tempMin)}°
-            </motion.span>
-          </div>
-          {hasPrecipitation && (
-            <motion.div 
-              className="flex items-center gap-2 text-blue-300 drop-shadow-lg"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 260, damping: 20 }}
-            >
-              <FiDroplet className="animate-pulse" />
-              <span>{precipitation}%</span>
-            </motion.div>
-          )}
-        </motion.div>
+        <div className="flex flex-col items-center gap-3 sm:gap-4">
+          <motion.div
+            variants={iconVariants}
+            className="relative w-12 h-12 sm:w-16 sm:h-16"
+          >
+            <WeatherIcon className="w-full h-full text-white" />
+          </motion.div>
 
-        <motion.div 
-          className="space-y-3 pt-4 border-t border-white/20"
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.4 }}
-        >
-          {windSpeed !== undefined && (
-            <motion.div 
-              className="flex items-center justify-between text-sm"
-              whileHover={{ x: 5 }}
-            >
-              <div className="flex items-center gap-2 text-white/90 drop-shadow-md">
-                <FiWind className="text-gray-300 animate-spin-slow" />
-                <span>Wind</span>
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <span className="text-lg sm:text-xl font-bold text-white">
+                {Math.round(tempMax)}°
+              </span>
+              <span className="text-sm sm:text-base text-white/60">
+                {Math.round(tempMin)}°
+              </span>
+            </div>
+            <span className="text-xs sm:text-sm text-white/60">{unit}</span>
+          </div>
+
+          {/* Additional weather info */}
+          <div className="grid grid-cols-2 gap-2 sm:gap-3 w-full">
+            {hasPrecipitation && (
+              <div className="flex items-center gap-1 text-white/60">
+                <FiDroplet className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="text-xs sm:text-sm">{Math.round(precipitation * 100)}%</span>
               </div>
-              <span className="font-medium text-white drop-shadow-lg">{windSpeed} m/s</span>
-            </motion.div>
-          )}
-          
-          {sunrise && sunset && (
-            <>
-              <motion.div 
-                className="flex items-center justify-between text-sm"
-                whileHover={{ x: 5 }}
-              >
-                <div className="flex items-center gap-2 text-white/90 drop-shadow-md">
-                  {timeMode === 'night' ? (
-                    <FiMoon className="text-blue-300 animate-pulse" />
-                  ) : (
-                    <FiSunrise className="text-orange-300 animate-pulse" />
-                  )}
-                  <span>Sunrise</span>
+            )}
+            {windSpeed !== undefined && (
+              <div className="flex items-center gap-1 text-white/60">
+                <FiWind className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="text-xs sm:text-sm">{Math.round(windSpeed)} m/s</span>
+              </div>
+            )}
+          </div>
+
+          {/* Sunrise/Sunset for today */}
+          {(sunrise || sunset) && (
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 w-full mt-2">
+              {sunrise && (
+                <div className="flex items-center gap-1 text-white/60">
+                  <FiSunrise className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400" />
+                  <span className="text-xs sm:text-sm">{sunrise}</span>
                 </div>
-                <span className="font-medium text-white drop-shadow-lg">{sunrise}</span>
-              </motion.div>
-              <motion.div 
-                className="flex items-center justify-between text-sm"
-                whileHover={{ x: 5 }}
-              >
-                <div className="flex items-center gap-2 text-white/90 drop-shadow-md">
-                  {timeMode === 'night' ? (
-                    <FiMoon className="text-blue-300 animate-pulse" />
-                  ) : (
-                    <FiSunset className="text-orange-300 animate-pulse" />
-                  )}
-                  <span>Sunset</span>
+              )}
+              {sunset && (
+                <div className="flex items-center gap-1 text-white/60">
+                  <FiSunset className="w-3 h-3 sm:w-4 sm:h-4 text-orange-400" />
+                  <span className="text-xs sm:text-sm">{sunset}</span>
                 </div>
-                <span className="font-medium text-white drop-shadow-lg">{sunset}</span>
-              </motion.div>
-            </>
+              )}
+            </div>
           )}
-        </motion.div>
+        </div>
       </div>
     </motion.div>
   );
