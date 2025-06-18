@@ -607,7 +607,6 @@ body {
     rgba(255, 255, 255, 0.2) 100%
   );
   backdrop-filter: blur(8px);
-  animation: frost-crystal 3s ease-in-out infinite;
 }
 
 .melt-effect {
@@ -627,7 +626,6 @@ body {
     rgba(255, 255, 255, 0.05) 50%,
     rgba(255, 255, 255, 0.1) 100%
   );
-  animation: melt-drip 3s ease-in-out infinite;
 }
 
 @keyframes frost-crystal {
