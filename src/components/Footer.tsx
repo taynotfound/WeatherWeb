@@ -37,7 +37,7 @@ export default function Footer() {
               <FaDiscord size={20} className="sm:w-6 sm:h-6" />
             </motion.a>
             <motion.a
-              href="https://taynotfound.com"
+              href="https://taymaerz.de"
               target="_blank"
               rel="noopener noreferrer"
               className="text-white/70 hover:text-white transition-colors"
@@ -56,7 +56,7 @@ export default function Footer() {
             >
               <FiHeart className="text-red-500" />
             </motion.div>
-            <span>by tay maerz</span>
+            <span>by Tay März</span>
           </div>
           
           <p className="text-xs sm:text-sm text-white/50">
