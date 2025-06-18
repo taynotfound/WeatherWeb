@@ -21,37 +21,37 @@ const WeatherRadar: React.FC<WeatherRadarProps> = ({ isOpen, onClose, lat, lon }
   const [isPlaying, setIsPlaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchRadarData = async () => {
-    try {
-      setError(null);
-      const response = await fetch('https://api.rainviewer.com/public/weather-maps.json');
-      if (!response.ok) {
-        throw new Error('Failed to fetch radar data');
-      }
-      const data = await response.json();
-      
-      if (!data.radar?.past?.length) {
-        throw new Error('No radar data available');
-      }
-
-      const radarFrames = data.radar.past.map((item: any) => ({
-        path: item.path,
-        time: item.time
-      }));
-      
-      setFrames(radarFrames);
-    } catch (error) {
-      console.error('Error fetching radar data:', error);
-      setError(error instanceof Error ? error.message : 'Failed to load radar data');
-      onClose(); // Close the radar view when there's an error
-    }
-  };
-
   useEffect(() => {
     if (isOpen) {
+      const fetchRadarData = async () => {
+        try {
+          setError(null);
+          const response = await fetch('https://api.rainviewer.com/public/weather-maps.json');
+          if (!response.ok) {
+            throw new Error('Failed to fetch radar data');
+          }
+          const data = await response.json();
+          
+          if (!data.radar?.past?.length) {
+            throw new Error('No radar data available');
+          }
+
+          const radarFrames = data.radar.past.map((item: any) => ({
+            path: item.path,
+            time: item.time
+          }));
+          
+          setFrames(radarFrames);
+        } catch (error) {
+          console.error('Error fetching radar data:', error);
+          setError(error instanceof Error ? error.message : 'Failed to load radar data');
+          onClose(); // Close the radar view when there's an error
+        }
+      };
+
       fetchRadarData();
     }
-  }, [isOpen, fetchRadarData]);
+  }, [isOpen, onClose]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;

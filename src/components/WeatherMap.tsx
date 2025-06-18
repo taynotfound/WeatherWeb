@@ -22,7 +22,7 @@ const WeatherMap = ({ weather }: WeatherMapProps) => {
     return weather?.lat && weather?.lon 
       ? [weather.lat, weather.lon] as [number, number]
       : defaultCenter;
-  }, [weather?.lat, weather?.lon]);
+  }, [weather?.lat, weather?.lon, defaultCenter]);
 
   useEffect(() => {
     if (!mapRef.current) {

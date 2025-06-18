@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FiShare2, FiStar, FiArrowLeft } from 'react-icons/fi';
@@ -14,7 +14,8 @@ import AdvancedWeatherInfo from '@/components/AdvancedWeatherInfo';
 import { useFavorites } from '@/components/FavoritesContext';
 import { getCurrentWeather, getForecast, WeatherData, ForecastData } from '@/services/weatherApi';
 
-export default function WeatherPage() {
+// Separate component that uses useSearchParams
+function WeatherContent() {
   const searchParams = useSearchParams();
   const city = searchParams.get('city');
   const [weather, setWeather] = useState<WeatherData | null>(null);
@@ -304,5 +305,26 @@ export default function WeatherPage() {
         onClose={() => setIsChatOpen(false)}
       />
     </div>
+  );
+}
+
+// Loading fallback component
+function WeatherLoading() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+        <p className="mt-4 text-white/70 text-shadow-md">Loading weather page...</p>
+      </div>
+    </div>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function WeatherPage() {
+  return (
+    <Suspense fallback={<WeatherLoading />}>
+      <WeatherContent />
+    </Suspense>
   );
 } 
