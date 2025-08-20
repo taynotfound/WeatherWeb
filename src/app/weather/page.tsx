@@ -3,6 +3,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FiShare2, FiStar, FiArrowLeft } from 'react-icons/fi';
+import html2canvas from 'html2canvas';
 import Link from 'next/link';
 import WeatherCard from '@/components/WeatherCard';
 import WeatherDetails from '@/components/WeatherDetails';
@@ -53,15 +54,33 @@ function WeatherContent() {
   }, [city]);
 
   const handleShare = async () => {
-    if (navigator.share) {
+    const weatherSection = document.querySelector('.container');
+    if (weatherSection) {
       try {
-        await navigator.share({
-          title: `Weather in ${city}`,
-          text: `Check out the weather in ${city} on WeatherWeb!`,
-          url: window.location.href,
-        });
+        const canvas = await html2canvas(weatherSection as HTMLElement, { backgroundColor: null });
+        const image = canvas.toDataURL('image/png');
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([], '')] })) {
+          const response = await fetch(image);
+          const blob = await response.blob();
+          const file = new File([blob], `weather-${city}.png`, { type: 'image/png' });
+          await navigator.share({
+            title: `Weather in ${city}`,
+            text: `Check out the weather in ${city} on WeatherWeb!`,
+            files: [file],
+          });
+        } else {
+          // Fallback: download image or copy link
+          const link = document.createElement('a');
+          link.href = image;
+          link.download = `weather-${city}.png`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          alert('Weather snapshot downloaded!');
+        }
       } catch (err) {
-        console.error('Error sharing:', err);
+        console.error('Error sharing snapshot:', err);
+        alert('Failed to create snapshot.');
       }
     } else {
       // Fallback for browsers that don't support Web Share API

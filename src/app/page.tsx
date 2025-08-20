@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import Footer from '@/components/Footer';
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
@@ -209,30 +210,8 @@ export default function HomePage() {
           </motion.section>
         )}
 
-        {/* Footer */}
-        <footer className="mt-12 sm:mt-16 text-center text-sm text-white/60">
-          <div className="flex flex-col sm:flex-row justify-center gap-4 mb-4">
-            <Link
-              href="/about"
-              className="glass glass-hover px-4 sm:px-6 py-3 rounded-lg text-white no-underline 
-                       transition-all duration-200 hover:scale-105"
-            >
-              About WeatherWeb
-            </Link>
-            <a
-              href="https://github.com/taygotfound/weatherweb"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="glass glass-hover px-4 sm:px-6 py-3 rounded-lg text-white no-underline 
-                       flex items-center justify-center gap-2 transition-all duration-200 
-                       hover:scale-105"
-            >
-              <FiGithub size={16} />
-              View on GitHub
-            </a>
-          </div>
-          <p>Powered by AI and ❤️</p>
-        </footer>
+  {/* Footer */}
+  <Footer />
       </main>
 
       {/* Tomato Character */}

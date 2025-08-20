@@ -313,7 +313,7 @@ const AdvancedWeatherInfo: React.FC<AdvancedWeatherInfoProps> = ({ city }) => {
             </p>
             <div className="relative w-12 h-12 mx-auto my-2">
               <Image
-                src={hour.icon}
+                src={hour.icon.startsWith('//') ? `https:${hour.icon}` : hour.icon}
                 alt={hour.condition}
                 fill
                 className="object-contain"

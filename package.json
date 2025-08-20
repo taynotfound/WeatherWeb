@@ -17,6 +17,7 @@
     "chart.js": "^4.5.0",
     "cities.json": "^1.1.49",
     "framer-motion": "^12.6.3",
+    "html2canvas": "^1.4.1",
     "leaflet": "^1.9.4",
     "next": "15.2.4",
     "react": "^19.0.0",

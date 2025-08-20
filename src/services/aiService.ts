@@ -8,30 +8,32 @@ interface AIResponse {
 }
 
 export async function getAIRecommendations(weather: WeatherData): Promise<AIResponse> {
-  const cacheKey = `ai_${weather.city}_${weather.condition}_${weather.temperature}`;
-  const cached = getCache<AIResponse>(cacheKey);
-  if (cached) return cached;
+  // No caching, always call the AI
 
+  const today = new Date().toISOString().slice(0, 10);
   const prompt = `Given the following weather conditions:
+    City: ${weather.city}
+    Date: ${today}
     Temperature: ${weather.temperature}°C
     Condition: ${weather.condition}
     Humidity: ${weather.humidity}%
     Wind Speed: ${weather.windSpeed} m/s
     Precipitation: ${weather.precipitation} mm
-    
+
     Please provide:
     1. A list of appropriate clothing items
     2. Suggested activities for this weather
     3. Weather-related tips and precautions
-    
-    Format the response as a JSON object with arrays for clothing, activities, and tips.`;
+    4. If possible, suggest some local events happening in ${weather.city} on ${today} or in the next few days. (if you know any, otherwise say 'No local events found').
+
+    Format the response as a JSON object with arrays for clothing, activities, tips, and localEvents.`;
 
   try {
     const response = await fetch('https://api.webraft.in/v2/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.AI_KEY}`
+        'Authorization': `Bearer wr-P5vKkHsI42aGQGZeTy6z9m`
       },
       body: JSON.stringify({
         model: 'gpt-3.5-turbo',
@@ -61,9 +63,15 @@ export async function getAIRecommendations(weather: WeatherData): Promise<AIResp
       throw new Error('Invalid API response format');
     }
 
-    const content = data.choices[0].message.content;
+      let content = data.choices[0].message.content;
+      // Remove code block markers if present
+      content = content.trim();
+      if (content.startsWith('```')) {
+        content = content.replace(/^```[a-zA-Z]*\n?/, '').replace(/```$/, '').trim();
+      }
     
     try {
+      console.log('AI Response:', content);
       const parsedResponse = JSON.parse(content);
       
       // Validate the response structure
@@ -73,8 +81,7 @@ export async function getAIRecommendations(weather: WeatherData): Promise<AIResp
         throw new Error('Invalid response structure');
       }
 
-      setCache(cacheKey, parsedResponse, 30);
-      return parsedResponse;
+  return parsedResponse;
     } catch (e) {
       console.error('Failed to parse AI response:', e);
       // Return a fallback response if parsing fails
@@ -95,8 +102,7 @@ export async function getAIRecommendations(weather: WeatherData): Promise<AIResp
           'Dress in layers for changing conditions'
         ]
       };
-      setCache(cacheKey, fallbackResponse, 30);
-      return fallbackResponse;
+  return fallbackResponse;
     }
   } catch (error) {
     console.error('Error getting AI recommendations:', error);
@@ -118,7 +124,6 @@ export async function getAIRecommendations(weather: WeatherData): Promise<AIResp
         'Dress in layers for changing conditions'
       ]
     };
-    setCache(cacheKey, fallbackResponse, 30);
-    return fallbackResponse;
+  return fallbackResponse;
   }
 } 

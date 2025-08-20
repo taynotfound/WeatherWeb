@@ -1,14 +1,14 @@
 import React from 'react';
 import { useEffect, useState } from 'react';
 import WeatherCard from './WeatherCard';
-import WeatherMap from './WeatherMap';
+// ...existing code...
 import WeatherRadar from './WeatherRadar';
 import ForecastCard from './ForecastCard';
 import WeatherDetails from './WeatherDetails';
 
 interface WeatherLayoutProps {
   weatherData: any;
-  mapData?: any;
+  // ...existing code...
   radarData?: any;
   forecastData?: any;
   detailsData?: any;
@@ -16,7 +16,7 @@ interface WeatherLayoutProps {
 
 const WeatherLayout: React.FC<WeatherLayoutProps> = ({
   weatherData,
-  mapData,
+  // ...existing code...
   radarData,
   forecastData,
   detailsData,
@@ -75,7 +75,7 @@ const WeatherLayout: React.FC<WeatherLayoutProps> = ({
         flexDirection: 'column',
         gap: '1rem',
       }}>
-        <WeatherMap {...mapData} />
+  {/* Map removed */}
         <WeatherRadar {...radarData} />
       </div>
 

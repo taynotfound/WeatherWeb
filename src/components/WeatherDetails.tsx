@@ -1,22 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiWind, FiDroplet, FiEye, FiCloud, FiThermometer, FiClock, FiMapPin } from 'react-icons/fi';
+import { FiWind, FiDroplet, FiEye, FiCloud, FiThermometer, FiClock } from 'react-icons/fi';
 import { WiDaySunny, WiNightClear } from 'react-icons/wi';
 import { MdAir } from 'react-icons/md';
-import 'leaflet/dist/leaflet.css';
-import dynamic from 'next/dynamic';
-import type { ComponentType } from 'react';
+// ...existing code...
 import { WeatherData } from '@/services/weatherApi';
 import { displayTemperature } from '@/utils/weatherIcons';
 
-interface WeatherMapProps {
-  weather: WeatherData;
-}
-
-const Map = dynamic<WeatherMapProps>(
-  () => import('./WeatherMap').then((mod) => mod.default),
-  { ssr: false }
-);
+// ...existing code...
 
 interface WeatherDetailsProps {
   visibility: number;
@@ -251,79 +242,7 @@ const WeatherDetails: React.FC<WeatherDetailsProps> = ({
 
         
       </motion.div>
-      <motion.div
-        className="glass p-4 sm:p-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.3 }}
-        style={{
-          borderRadius: '1rem',
-          height: '300px',
-          position: 'relative',
-          overflow: 'hidden',
-          width: '100%'
-        }}
-      >
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          marginBottom: '1rem',
-          color: 'var(--text-secondary)'
-        }}>
-          <span className="text-gradient" style={{ fontSize: '1.125rem', fontWeight: 500 }}>Weather Radar</span>
-        </div>
-        {typeof window !== 'undefined' && (
-          <div style={{ height: 'calc(100% - 2rem)', width: '100%', position: 'relative' }}>
-            <Map
-              weather={{
-                city: '',
-                country: '',
-                temperature: feelsLike,
-                condition: '',
-                icon: '',
-                humidity: humidity,
-                windSpeed: windSpeed,
-                windGust: windGust,
-                windDeg: windDeg,
-                sunrise: '',
-                sunset: '',
-                sunriseTimestamp: 0,
-                sunsetTimestamp: 0,
-                visibility: visibility,
-                clouds: clouds,
-                dt: lastUpdate,
-                feelsLike: feelsLike,
-                pressure: pressure,
-                precipitation: precipitation,
-                airQuality: airQuality,
-                airPollutants: airPollutants,
-                lat: lat,
-                lon: lon,
-                precipitationForecast: undefined,
-                currentTime: lastUpdate,
-                timezone: 0,
-                tempMin: 0,
-                tempMax: 0,
-                isDay: isDay
-              }}
-            />
-            <div style={{
-              position: 'absolute',
-              bottom: '0.5rem',
-              right: '0.5rem',
-              fontSize: '0.75rem',
-              color: 'var(--text-secondary)',
-              backgroundColor: 'rgba(0,0,0,0.5)',
-              padding: '0.25rem 0.5rem',
-              borderRadius: '0.25rem',
-              zIndex: 1000
-            }}>
-              Powered by RainViewer
-            </div>
-          </div>
-        )}
-      </motion.div>
+  {/* Map removed */}
     </>
   );
 };
