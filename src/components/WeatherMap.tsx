@@ -18,11 +18,8 @@ const WeatherMap = ({ weather }: WeatherMapProps) => {
   const defaultCenter: [number, number] = [51.1657, 10.4515]; // Center of Germany
 
   // Use weather coordinates if available, otherwise use default
-  const center = useMemo(() => {
-    return weather?.lat && weather?.lon 
-      ? [weather.lat, weather.lon] as [number, number]
-      : defaultCenter;
-  }, [weather?.lat, weather?.lon, defaultCenter]);
+  const mapCenter: [number, number] = [weather.lat ?? defaultCenter[0], weather.lon ?? defaultCenter[1]];
+  const center: [number, number] = mapCenter;
 
   useEffect(() => {
     if (!mapRef.current) {

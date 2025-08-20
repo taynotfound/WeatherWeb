@@ -49,7 +49,7 @@ export default function AIRecommendations({ weather }: AIRecommendationsProps) {
       }
     };
     fetchRecommendations();
-  }, [weather]);
+  }, [weather, lastResponse, lastWeatherKey]);
 
   if (loading) {
     return (
