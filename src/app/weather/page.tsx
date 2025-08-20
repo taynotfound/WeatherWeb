@@ -3,7 +3,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FiShare2, FiStar, FiArrowLeft } from 'react-icons/fi';
-import html2canvas from 'html2canvas';
+// ...existing code...
 import Link from 'next/link';
 import WeatherCard from '@/components/WeatherCard';
 import WeatherDetails from '@/components/WeatherDetails';
@@ -54,38 +54,27 @@ function WeatherContent() {
   }, [city]);
 
   const handleShare = async () => {
-    const weatherSection = document.querySelector('.container');
-    if (weatherSection) {
+    const prettyUrl = `${window.location.origin}/weather?city=${encodeURIComponent(city ?? '')}`;
+    // Get current weather info from state
+    let weatherInfo = '';
+    if (weather) {
+      weatherInfo = `Current: ${weather.condition}, ${Math.round(weather.temperature)}°C`;
+    }
+    const shareText = `🌤️ Weather in ${city}\n${weatherInfo}\n\nSee the latest forecast, AI tips, and more on WeatherWeb!\n\n${prettyUrl}`;
+    if (navigator.share) {
       try {
-        const canvas = await html2canvas(weatherSection as HTMLElement, { backgroundColor: null });
-        const image = canvas.toDataURL('image/png');
-        if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([], '')] })) {
-          const response = await fetch(image);
-          const blob = await response.blob();
-          const file = new File([blob], `weather-${city}.png`, { type: 'image/png' });
-          await navigator.share({
-            title: `Weather in ${city}`,
-            text: `Check out the weather in ${city} on WeatherWeb!`,
-            files: [file],
-          });
-        } else {
-          // Fallback: download image or copy link
-          const link = document.createElement('a');
-          link.href = image;
-          link.download = `weather-${city}.png`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          alert('Weather snapshot downloaded!');
-        }
+        await navigator.share({
+          title: `Weather in ${city} | WeatherWeb`,
+          text: shareText,
+          url: prettyUrl,
+        });
       } catch (err) {
-        console.error('Error sharing snapshot:', err);
-        alert('Failed to create snapshot.');
+        console.error('Error sharing:', err);
       }
     } else {
       // Fallback for browsers that don't support Web Share API
-      navigator.clipboard.writeText(window.location.href);
-      alert('Link copied to clipboard!');
+      navigator.clipboard.writeText(shareText);
+      alert('Prettier weather info copied to clipboard!');
     }
   };
 
@@ -341,9 +330,25 @@ function WeatherLoading() {
 
 // Main page component with Suspense boundary
 export default function WeatherPage() {
+  // Basic SEO tags
+  useEffect(() => {
+    const city = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('city') : '';
+    const title = city ? `Weather in ${city} | WeatherWeb` : 'WeatherWeb - AI Weather Forecasts';
+    const description = city
+      ? `Get the latest weather, AI-powered tips, and local events for ${city} on WeatherWeb.`
+      : 'WeatherWeb provides AI-powered weather forecasts, tips, and local events.';
+    document.title = title;
+    let metaDesc = document.querySelector('meta[name="description"]');
+    if (!metaDesc) {
+      metaDesc = document.createElement('meta');
+      metaDesc.setAttribute('name', 'description');
+      document.head.appendChild(metaDesc);
+    }
+    metaDesc.setAttribute('content', description);
+  }, []);
   return (
     <Suspense fallback={<WeatherLoading />}>
       <WeatherContent />
     </Suspense>
   );
-} 
+}

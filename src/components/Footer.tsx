@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { FiGithub, FiGlobe, FiHeart } from 'react-icons/fi';
@@ -7,14 +7,6 @@ import { FaDiscord } from 'react-icons/fa';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
-  const [visitorCount, setVisitorCount] = useState<number | null>(null);
-
-  useEffect(() => {
-    fetch('/api/visitor-stats')
-      .then(res => res.json())
-      .then(data => setVisitorCount(data.count))
-      .catch(() => setVisitorCount(null));
-  }, []);
 
   return (
     <motion.footer 
@@ -67,11 +59,6 @@ export default function Footer() {
             </motion.div>
             <span>by Tay März</span>
           </div>
-          {visitorCount !== null && (
-            <div className="text-xs sm:text-sm text-white/60 mt-2">
-              Visitor Count: <span className="font-bold text-white">{visitorCount}</span>
-            </div>
-          )}
           <p className="text-xs sm:text-sm text-white/50">
             © {currentYear} WeatherWeb. All rights reserved.
           </p>
