@@ -23,13 +23,22 @@ export async function GET(req: NextRequest) {
   try {
     const url =
       `${URL_AQ}?latitude=${lat}&longitude=${lon}` +
-      `&current=european_aqi,us_aqi,pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone` +
+      `&current=european_aqi,us_aqi,pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone,` +
+      `alder_pollen,birch_pollen,grass_pollen,mugwort_pollen,olive_pollen,ragweed_pollen,dust` +
       `&timezone=auto`;
     const r = await fetch(url, { next: { revalidate: 1800 } });
     if (!r.ok) throw new Error(`air-quality ${r.status}`);
     const j = await r.json();
     const c = j?.current || {};
     const meta = aqiLabel(c.european_aqi);
+    const pollens = {
+      alder: c.alder_pollen, birch: c.birch_pollen, grass: c.grass_pollen,
+      mugwort: c.mugwort_pollen, olive: c.olive_pollen, ragweed: c.ragweed_pollen,
+    };
+    const pollenMax = Math.max(0, ...Object.values(pollens).map((v: any) => Number(v) || 0));
+    const pollenTop = Object.entries(pollens)
+      .filter(([, v]) => typeof v === 'number' && (v as number) > 0)
+      .sort((a, b) => (b[1] as number) - (a[1] as number))[0];
     return NextResponse.json({
       time: c.time,
       eu_aqi: c.european_aqi ?? null,
@@ -42,6 +51,12 @@ export async function GET(req: NextRequest) {
       co: c.carbon_monoxide ?? null,
       label: meta.label,
       tone: meta.tone,
+      pollen: {
+        ...pollens,
+        dust: c.dust ?? null,
+        max: pollenMax,
+        top: pollenTop ? { type: pollenTop[0], value: pollenTop[1] } : null,
+      },
     });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message ?? 'failed' }, { status: 500 });

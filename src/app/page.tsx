@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Search, Star, Wind, Droplets, Eye, Gauge,
   Sun, CalendarDays, Map as MapIcon, Bookmark,
-  MapPin, Share2, AlertTriangle,
+  MapPin, Share2, AlertTriangle, GitCompare, Keyboard,
 } from 'lucide-react';
 import { Tomato } from '@/components/Tomato';
 import { OutfitCard } from '@/components/OutfitCard';
@@ -16,7 +16,13 @@ import { WeatherMap } from '@/components/WeatherMap';
 import { AirCard } from '@/components/AirCard';
 import AlertsCard from '@/components/AlertsCard';
 import AIInsights from '@/components/AIInsights';
+import PollenCard from '@/components/PollenCard';
 import InstallPrompt from '@/components/InstallPrompt';
+import { WindCompass } from '@/components/WindCompass';
+import { HistoryCard } from '@/components/HistoryCard';
+import { LightningCard } from '@/components/LightningCard';
+import { CompareCard } from '@/components/CompareCard';
+import { ShortcutsOverlay } from '@/components/ShortcutsOverlay';
 import { useFavorites } from '@/lib/favorites';
 import { useUnits } from '@/lib/units';
 import { weatherIcon, weatherLabel } from '@/lib/weatherIcon';
@@ -29,6 +35,7 @@ const TABS = [
   { id: 'forecast', label: 'forecast', icon: CalendarDays },
   { id: 'alerts',   label: 'alerts',   icon: AlertTriangle },
   { id: 'map',      label: 'map',      icon: MapIcon },
+  { id: 'compare',  label: 'compare',  icon: GitCompare },
   { id: 'saved',    label: 'saved',    icon: Bookmark },
 ] as const;
 type Tab = (typeof TABS)[number]['id'];
@@ -45,6 +52,8 @@ export default function Home() {
   const [results, setResults] = useState<any[]>([]);
   const [toast, setToast] = useState<string | null>(null);
   const [locating, setLocating] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
   const fav = useFavorites();
   const { unit, setUnit, temp, tempUnit, speed, speedUnit } = useUnits();
 
@@ -111,6 +120,32 @@ export default function Home() {
     const t = setTimeout(() => setToast(null), 2200);
     return () => clearTimeout(t);
   }, [toast]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement)?.tagName;
+      const inField = tag === 'INPUT' || tag === 'TEXTAREA';
+      if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+        e.preventDefault(); setShowShortcuts(s => !s); return;
+      }
+      if (e.key === 'Escape') { setShowShortcuts(false); return; }
+      if (inField) return;
+      if (e.key === '/') { e.preventDefault(); searchRef.current?.focus(); return; }
+      if (e.key === '1') setTab('today');
+      else if (e.key === '2') setTab('forecast');
+      else if (e.key === '3') setTab('alerts');
+      else if (e.key === '4') setTab('map');
+      else if (e.key === '5') setTab('compare');
+      else if (e.key === '6') setTab('saved');
+      else if (e.key === 'l' || e.key === 'L') locate();
+      else if (e.key === 's' || e.key === 'S') share();
+      else if (e.key === 'u' || e.key === 'U') setUnit(unit === 'metric' ? 'imperial' : 'metric');
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [unit]);
 
   function pick(r: any) {
     setLoc({
@@ -196,6 +231,9 @@ export default function Home() {
           <button className="btn-icon" aria-label="Share location" onClick={share}>
             <Share2 size={18} />
           </button>
+          <button className="btn-icon" aria-label="Keyboard shortcuts" onClick={() => setShowShortcuts(true)}>
+            <Keyboard size={18} />
+          </button>
           {weather && fav && (
             <button
               className="btn-icon"
@@ -215,8 +253,9 @@ export default function Home() {
       <div className="search-wrap">
         <Search size={16} className="search-icon" />
         <input
+          ref={searchRef}
           className="input"
-          placeholder="Search city"
+          placeholder="Search city  ( / to focus )"
           value={query}
           onChange={e => setQuery(e.target.value)}
           style={{ paddingLeft: 36 }}
@@ -291,7 +330,11 @@ export default function Home() {
           <RainTimeline lat={loc.lat} lon={loc.lon} />
           <OutfitCard weather={weather} />
           <HourlyStrip weather={weather} />
+          <WindCompass weather={weather} />
           <AirCard lat={loc.lat} lon={loc.lon} />
+          <PollenCard lat={loc.lat} lon={loc.lon} />
+          <LightningCard lat={loc.lat} lon={loc.lon} />
+          <HistoryCard lat={loc.lat} lon={loc.lon} />
           <SunCard weather={weather} />
         </>
       )}
@@ -311,6 +354,10 @@ export default function Home() {
         <div className="map-wrap">
           <WeatherMap lat={loc.lat} lon={loc.lon} />
         </div>
+      )}
+
+      {tab === 'compare' && (
+        <CompareCard baseCity={{ id: favId, name: displayName, country: loc.country, lat: loc.lat, lon: loc.lon }} />
       )}
 
       {tab === 'saved' && (
@@ -357,6 +404,7 @@ export default function Home() {
       </nav>
 
       {toast && <div className="toast">{toast}</div>}
+      {showShortcuts && <ShortcutsOverlay onClose={() => setShowShortcuts(false)} />}
       <InstallPrompt />
       <Tomato weather={weather} />
     </main>

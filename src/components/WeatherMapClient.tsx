@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import 'leaflet/dist/leaflet.css';
 import { Cloud, CloudRain, Thermometer, Wind, Radar, Play, Pause } from 'lucide-react';
+import { MapLegend } from './MapLegend';
 
 type LayerKind = 'radar' | 'precipitation' | 'clouds' | 'temp' | 'wind';
 
@@ -127,6 +128,8 @@ export default function WeatherMapClient({ lat, lon }: { lat: number; lon: numbe
         <LayerBtn cur={layer} v="temp"          set={setLayer} icon={<Thermometer size={14} />} label="temp" />
         <LayerBtn cur={layer} v="wind"          set={setLayer} icon={<Wind size={14} />}        label="wind" />
       </div>
+
+      <MapLegend kind={layer} />
 
       {layer === 'radar' && radar?.frames?.length ? (
         <div className="map-timeline">
