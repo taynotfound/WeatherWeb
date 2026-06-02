@@ -1,31 +1,46 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import Script from "next/script";
-import "./globals.css";
-import { FavoritesProvider } from "@/components/FavoritesContext";
-import WeatherProvider from "@/components/WeatherProvider";
-import Footer from '@/components/Footer';
-import { ThemeProvider } from '@/context/ThemeContext';
-import { Analytics } from "@vercel/analytics/next"
-import { SpeedInsights } from "@vercel/speed-insights/next"
+import type { Metadata, Viewport } from 'next';
+import { Inter, Funnel_Display, JetBrains_Mono } from 'next/font/google';
+import './globals.css';
+import { UnitsProvider } from '@/lib/units';
 
-const inter = Inter({ subsets: ["latin"], variable: '--font-inter' });
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+});
+
+const funnel = Funnel_Display({
+  subsets: ['latin'],
+  variable: '--font-display',
+  display: 'swap',
+  weight: ['400', '500', '600', '700', '800'],
+});
+
+const mono = JetBrains_Mono({
+  subsets: ['latin'],
+  variable: '--font-mono',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
-  title: "WeatherWeb - Your AI-powered weather companion",
-  description: "Get accurate weather forecasts and AI-powered recommendations for your location.",
+  title: 'Tomato — weather, with attitude.',
+  description: 'A weather app with a tomato who has opinions about what you should wear.',
   manifest: '/manifest.json',
-  icons: {
-    icon: '/tomato.svg',
-    apple: '/tomato.svg',
-  },
-  themeColor: '#0f172a',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'WeatherWeb',
+    title: 'Tomato',
   },
+  icons: {
+    icon: '/tomato.svg',
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#1a1625',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({
@@ -34,29 +49,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <head>
-        <link rel="icon" href="/tomato.svg" />
-        <link rel="apple-touch-icon" href="/tomato.svg" />
-        <meta name="theme-color" content="#0f172a" />
-        <Script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4" strategy="afterInteractive" />
-      </head>
-      <body className={inter.className}>
-      <SpeedInsights/>
-      <Analytics/>
-        <ThemeProvider>
-          <WeatherProvider>
-            <FavoritesProvider>
-              <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-900 to-indigo-950">
-                <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]"></div>
-                <div className="relative min-h-screen">
-                  {children}
-                </div>
-              </div>
-            </FavoritesProvider>
-          </WeatherProvider>
-        </ThemeProvider>
-        <Footer />
+    <html lang="en" className={`${inter.variable} ${funnel.variable} ${mono.variable}`}>
+      <body>
+        <UnitsProvider>{children}</UnitsProvider>
       </body>
     </html>
   );

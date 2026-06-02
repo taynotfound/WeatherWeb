@@ -1,129 +1,73 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import Image from 'next/image';
-import { FiMessageSquare, FiX } from 'react-icons/fi';
-import type { WeatherData } from '@/services/weatherApi';
 
-interface TomatoProps {
-  weather?: WeatherData;
-  onChat?: () => void;
-}
+import { useState } from 'react';
+import { Send, X, MessageSquare } from 'lucide-react';
 
-export default function Tomato({ weather, onChat }: TomatoProps) {
-  const [isVisible, setIsVisible] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
-  const [message, setMessage] = useState('');
-  const [isBouncing, setIsBouncing] = useState(false);
+type Msg = { role: 'user' | 'assistant'; content: string };
 
-  useEffect(() => {
-    // Show Tomato after a short delay
-    const timer = setTimeout(() => setIsVisible(true), 1000);
-    return () => clearTimeout(timer);
-  }, []);
+export function Tomato({ weather }: { weather: any }) {
+  const [open, setOpen] = useState(false);
+  const [msgs, setMsgs] = useState<Msg[]>([]);
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    if (weather) {
-      // Calculate if it's day or night
-      const currentTime = weather.currentTime * 1000; // Convert to milliseconds
-      const isDay = currentTime >= weather.sunriseTimestamp * 1000 && 
-                   currentTime <= weather.sunsetTimestamp * 1000;
-
-      // Generate a weather-related message
-      const messages = [
-        `It's ${weather.condition.toLowerCase()} in ${weather.city}!`,
-        `Temperature: ${Math.round(weather.temperature)}°C`,
-        `Humidity: ${weather.humidity}%`,
-        isDay ? 'Have a sunny day! ☀️' : 'Sweet dreams! 🌙',
-      ];
-      setMessage(messages[Math.floor(Math.random() * messages.length)]);
+  async function send() {
+    const q = text.trim();
+    if (!q || busy) return;
+    const next: Msg[] = [...msgs, { role: 'user', content: q }];
+    setMsgs(next);
+    setText('');
+    setBusy(true);
+    try {
+      const r = await fetch('/api/tomato', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ messages: next, weather }),
+      });
+      const j = await r.json();
+      setMsgs(m => [...m, { role: 'assistant', content: j.reply ?? '…' }]);
+    } catch {
+      setMsgs(m => [...m, { role: 'assistant', content: 'I died for a second. Try again.' }]);
+    } finally {
+      setBusy(false);
     }
-  }, [weather]);
+  }
 
-  // Random bounce animation
-  useEffect(() => {
-    const bounceInterval = setInterval(() => {
-      if (!isHovered) {
-        setIsBouncing(true);
-        setTimeout(() => setIsBouncing(false), 1000);
-      }
-    }, 5000);
-
-    return () => clearInterval(bounceInterval);
-  }, [isHovered]);
+  if (!open) {
+    return (
+      <button className="tomato-fab" onClick={() => setOpen(true)} aria-label="Open Tomato">
+        <MessageSquare size={14} />
+        Ask Tomato
+      </button>
+    );
+  }
 
   return (
-    <AnimatePresence>
-      {isVisible && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 20 }}
-          className="fixed bottom-4 right-4 z-50"
-        >
-          <div className="relative">
-            {/* Speech Bubble */}
-            <AnimatePresence>
-              {isHovered && message && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8, y: 10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.8, y: 10 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  className="absolute bottom-full right-0 mb-4 p-4 bg-white/10 backdrop-blur-lg 
-                           rounded-lg text-white max-w-xs shadow-lg"
-                >
-                  <p className="text-sm">{message}</p>
-                  <div className="absolute bottom-0 right-4 transform translate-y-1/2 rotate-45 
-                                w-3 h-3 bg-white/10"></div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Tomato Character */}
-            <motion.div
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              animate={isBouncing ? {
-                y: [0, -10, 0],
-                transition: {
-                  duration: 0.5,
-                  ease: "easeInOut"
-                }
-              } : {}}
-              onHoverStart={() => setIsHovered(true)}
-              onHoverEnd={() => setIsHovered(false)}
-              className="relative cursor-pointer"
-            >
-              <motion.div
-                whileHover={{ rotate: 5 }}
-                transition={{ type: "spring", stiffness: 300, damping: 10 }}
-              >
-                <Image
-                  src="/tomato.svg"
-                  alt="Tomato the Weather Rabbit"
-                  width={80}
-                  height={80}
-                  className="drop-shadow-lg"
-                />
-              </motion.div>
-              
-              {/* Chat Button */}
-              {onChat && (
-                <motion.button
-                  whileHover={{ scale: 1.2, rotate: 5 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={onChat}
-                  className="absolute -top-2 -right-2 p-2 rounded-full bg-purple-500 
-                           text-white shadow-lg hover:bg-purple-600 transition-colors"
-                >
-                  <FiMessageSquare className="w-4 h-4" />
-                </motion.button>
-              )}
-            </motion.div>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <div className="tomato-panel" role="dialog" aria-label="Tomato">
+      <div className="tomato-head">
+        <strong style={{ fontSize: 14 }}>Tomato</strong>
+        <button className="btn-icon" onClick={() => setOpen(false)} aria-label="Close"><X size={16} /></button>
+      </div>
+      <div className="tomato-body">
+        {msgs.length === 0 && (
+          <p style={{ color: 'var(--ink-mute)', fontSize: 13 }}>Ask anything about the weather. I'm a sentient tomato and slightly sharp.</p>
+        )}
+        {msgs.map((m, i) => (
+          <div key={i} className={`tomato-msg ${m.role === 'user' ? 'user' : 'bot'}`}>{m.content}</div>
+        ))}
+        {busy && <div className="tomato-msg bot" style={{ color: 'var(--ink-mute)' }}>…</div>}
+      </div>
+      <div className="tomato-foot">
+        <input
+          className="input"
+          placeholder="Type a question"
+          value={text}
+          onChange={e => setText(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && send()}
+          style={{ padding: '8px 10px' }}
+        />
+        <button className="btn btn-primary" onClick={send} disabled={busy} aria-label="Send"><Send size={14} /></button>
+      </div>
+    </div>
   );
-} 
+}

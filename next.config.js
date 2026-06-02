@@ -1,8 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  reactStrictMode: true,
   images: {
-    domains: ['openweathermap.org', 'cdn.weatherapi.com', 'weatherapi.com', 'cdn-icons-png.flaticon.com'],
-  },
+    remotePatterns: [
+      { protocol: 'https', hostname: '**' }
+    ]
+  }
 };
 
-module.exports = nextConfig; 
+module.exports = nextConfig;

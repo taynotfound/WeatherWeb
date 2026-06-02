@@ -1,227 +1,311 @@
 'use client';
-import Link from 'next/link';
-import Footer from '@/components/Footer';
 
-import { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { FiGithub, FiStar, FiSearch, FiClock, FiShare2, FiMapPin } from 'react-icons/fi';
-import SearchBar from '@/components/SearchBar';
-import WeatherCard from '@/components/WeatherCard';
-import WeatherDetails from '@/components/WeatherDetails';
-import ForecastCard from '@/components/ForecastCard';
-import Loading from '@/components/Loading';
-import ErrorMessage from '@/components/ErrorMessage';
-import WeatherRadar from '@/components/WeatherRadar';
-import { getCurrentWeather, getForecast, WeatherData, ForecastData } from '@/services/weatherApi';
-import WeatherAnimation from '@/components/WeatherAnimation';
-import AIRecommendations from '@/components/AIRecommendations';
-import FavoritesSidebar from '@/components/FavoritesSidebar';
-import AIChatWidget from '@/components/AIChatWidget';
-import { useFavorites } from '@/components/FavoritesContext';
-import { useRouter } from 'next/navigation';
-import Tomato from '@/components/Tomato';
+import { useEffect, useState } from 'react';
+import {
+  Search, Star, Wind, Droplets, Eye, Gauge,
+  Sun, CalendarDays, Map as MapIcon, Bookmark,
+  MapPin, Share2,
+} from 'lucide-react';
+import { Tomato } from '@/components/Tomato';
+import { OutfitCard } from '@/components/OutfitCard';
+import { RainTimeline } from '@/components/RainTimeline';
+import { SunCard } from '@/components/SunCard';
+import { HourlyStrip } from '@/components/HourlyStrip';
+import { DailyForecast } from '@/components/DailyForecast';
+import { WeatherMap } from '@/components/WeatherMap';
+import { AirCard } from '@/components/AirCard';
+import { useFavorites } from '@/lib/favorites';
+import { useUnits } from '@/lib/units';
+import { weatherIcon, weatherLabel } from '@/lib/weatherIcon';
 
-type LoadingState = Set<string>;
+const DEFAULT = { lat: 51.5074, lon: -0.1278, name: 'London', country: 'United Kingdom' };
+const TABS = [
+  { id: 'today',    label: 'today',    icon: Sun },
+  { id: 'forecast', label: 'forecast', icon: CalendarDays },
+  { id: 'map',      label: 'map',      icon: MapIcon },
+  { id: 'saved',    label: 'saved',    icon: Bookmark },
+] as const;
+type Tab = (typeof TABS)[number]['id'];
 
-export default function HomePage() {
-  const router = useRouter();
-  const [search, setSearch] = useState('');
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
-  const [favoriteWeather, setFavoriteWeather] = useState<Record<string, WeatherData>>({});
-  const [loading, setLoading] = useState<LoadingState>(new Set());
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const { favorites, removeFavorite } = useFavorites();
+export default function Home() {
+  const [loc, setLoc] = useState(DEFAULT);
+  const [weather, setWeather] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>('today');
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<any[]>([]);
+  const [toast, setToast] = useState<string | null>(null);
+  const [locating, setLocating] = useState(false);
+  const fav = useFavorites();
+  const { unit, setUnit, temp, tempUnit, speed, speedUnit } = useUnits();
 
-  const fetchWeather = useCallback(async (city: string) => {
-    try {
-      setLoading(prev => new Set(prev).add(city));
-      const data = await getCurrentWeather(city);
-      setFavoriteWeather(prev => ({ ...prev, [city]: data }));
-    } catch (error) {
-      console.error(`Failed to fetch weather for ${city}:`, error);
-    } finally {
-      setLoading(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(city);
-        return newSet;
-      });
+  // Read URL params on mount (share links)
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    const lat = parseFloat(p.get('lat') || '');
+    const lon = parseFloat(p.get('lon') || '');
+    const name = p.get('name');
+    if (isFinite(lat) && isFinite(lon)) {
+      setLoc({ lat, lon, name: name || 'Shared', country: '' });
+      return;
     }
+    // No share link → try geolocation
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      p => setLoc(l => ({ ...l, lat: p.coords.latitude, lon: p.coords.longitude, name: '' })),
+      () => {},
+      { enableHighAccuracy: false, timeout: 5000, maximumAge: 3600_000 }
+    );
   }, []);
 
   useEffect(() => {
-    // Load recent searches from localStorage
-    const recent = JSON.parse(localStorage.getItem('recentSearches') || '[]');
-    setRecentSearches(recent);
+    let alive = true;
+    setLoading(true);
+    fetch(`/api/weather?lat=${loc.lat}&lon=${loc.lon}`)
+      .then(r => r.json())
+      .then(j => {
+        if (!alive) return;
+        if (j?.error) { setErr(j.error); return; }
+        setErr(null);
+        setWeather(j);
+        if (j?.location?.name) {
+          setLoc(l => ({ ...l, name: j.location.name, country: j.location.country || '' }));
+        }
+      })
+      .catch(e => alive && setErr(String(e)))
+      .finally(() => alive && setLoading(false));
+    return () => { alive = false; };
+  }, [loc.lat, loc.lon]);
 
-    // Fetch weather for favorites
-    favorites.forEach(city => {
-      if (!favoriteWeather[city]) {
-        fetchWeather(city);
-      }
-    });
-  }, [favorites, fetchWeather, favoriteWeather]);
+  useEffect(() => {
+    if (query.length < 2) { setResults([]); return; }
+    const t = setTimeout(() => {
+      fetch(`/api/search?q=${encodeURIComponent(query)}`).then(r => r.json()).then(j => setResults(j.results || []));
+    }, 200);
+    return () => clearTimeout(t);
+  }, [query]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (search.trim()) {
-      router.push(`/weather?city=${encodeURIComponent(search.trim())}`);
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 2000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  function pick(r: any) {
+    setLoc({ lat: r.latitude, lon: r.longitude, name: r.name, country: r.country });
+    setQuery('');
+    setResults([]);
+    setTab('today');
+  }
+
+  function locate() {
+    if (!navigator.geolocation) { setToast('Geolocation not supported'); return; }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      p => {
+        setLoc({ lat: p.coords.latitude, lon: p.coords.longitude, name: '', country: '' });
+        setLocating(false);
+      },
+      () => { setLocating(false); setToast('Location denied'); },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 }
+    );
+  }
+
+  async function share() {
+    const url = `${window.location.origin}/?lat=${loc.lat}&lon=${loc.lon}&name=${encodeURIComponent(loc.name)}`;
+    const title = `${loc.name} — Tomato`;
+    if (navigator.share) {
+      try { await navigator.share({ title, url }); return; } catch {}
     }
-  };
-
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
+    try {
+      await navigator.clipboard.writeText(url);
+      setToast('Link copied');
+    } catch {
+      setToast('Share failed');
     }
-  };
+  }
 
-  const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 }
-  };
+  const c = weather?.current;
+  const favId = `${loc.lat.toFixed(2)},${loc.lon.toFixed(2)}`;
+  const isFav = fav?.isFav(favId);
+  const HeroIcon = c ? weatherIcon(c.weatherCode ?? 0, c.isDay !== false) : null;
+  const tu = tempUnit.replace('°F', '°');
+  const displayName = loc.name || `${loc.lat.toFixed(2)}°, ${loc.lon.toFixed(2)}°`;
 
   return (
-    <div className="min-h-screen">
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12 sm:mb-16"
-        >
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 text-gradient">
-            WeatherWeb
-          </h1>
-          <p className="text-lg sm:text-xl text-white/70">
-            Your AI-powered weather companion
-          </p>
-        </motion.div>
-
-        {/* Search Bar */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="max-w-2xl mx-auto mb-12 sm:mb-16"
-        >
-          <SearchBar
-            onCitySelect={(city) => {
-              if (city) {
-                router.push(`/weather?city=${encodeURIComponent(city)}`);
-              }
-            }}
-          />
-        </motion.div>
-
-        {/* Favorites Section */}
-        {favorites.length > 0 && (
-          <motion.section
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="mb-12 sm:mb-16"
+    <main className="shell">
+      <header className="app-header">
+        <div className="brand">
+          <img src="/tomato.svg" alt="" />
+          <h1>Tomato</h1>
+        </div>
+        <div className="header-actions">
+          <div className="unit-toggle" role="group" aria-label="Units">
+            <button className={unit === 'metric' ? 'is-active' : ''} onClick={() => setUnit('metric')}>°C</button>
+            <button className={unit === 'imperial' ? 'is-active' : ''} onClick={() => setUnit('imperial')}>°F</button>
+          </div>
+          <button
+            className="btn-icon"
+            aria-label="Use my location"
+            onClick={locate}
+            style={locating ? { color: 'var(--primary)' } : undefined}
           >
-            <h2 className="text-xl sm:text-2xl font-semibold mb-6 flex items-center gap-2">
-              <FiMapPin className="text-purple-400" />
-              Favorite Cities
-            </h2>
-            <motion.div
-              variants={container}
-              initial="hidden"
-              animate="show"
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
+            <MapPin size={18} />
+          </button>
+          <button className="btn-icon" aria-label="Share location" onClick={share}>
+            <Share2 size={18} />
+          </button>
+          {weather && fav && (
+            <button
+              className="btn-icon"
+              aria-label={isFav ? 'Remove from saved' : 'Save location'}
+              onClick={() => {
+                if (isFav) fav.remove(favId);
+                else fav.add({ id: favId, name: displayName, country: loc.country, latitude: loc.lat, longitude: loc.lon });
+              }}
+              style={isFav ? { color: 'var(--primary)' } : undefined}
             >
-              {favorites.map((city) => (
-                <motion.div
-                  key={city}
-                  variants={item}
-                  className="glass glass-hover p-6 rounded-xl cursor-pointer 
-                           transition-all duration-200 hover:scale-105"
-                  onClick={() => router.push(`/weather?city=${encodeURIComponent(city)}`)}
-                >
-                  {loading.has(city) ? (
-                    <div className="flex items-center justify-center h-24">
-                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
-                    </div>
-                  ) : favoriteWeather[city] ? (
-                    <>
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <h3 className="text-xl font-semibold">{city}</h3>
-                          <p className="text-white/70">
-                            {favoriteWeather[city].condition}
-                          </p>
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeFavorite(city);
-                          }}
-                          className="p-2 rounded-full bg-white/10 hover:bg-white/20 
-                                   transition-colors duration-200"
-                        >
-                          <FiMapPin className="w-5 h-5" />
-                        </button>
-                      </div>
-                      <div className="text-3xl font-bold">
-                        {Math.round(favoriteWeather[city].temperature)}°C
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-center text-white/70">
-                      Failed to load weather data
-                    </div>
-                  )}
-                </motion.div>
-              ))}
-            </motion.div>
-          </motion.section>
-        )}
+              <Star size={18} fill={isFav ? 'currentColor' : 'none'} />
+            </button>
+          )}
+        </div>
+      </header>
 
-        {/* Recent Searches */}
-        {recentSearches.length > 0 && (
-          <motion.section
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="mb-12 sm:mb-16"
+      <div className="search-wrap">
+        <Search size={16} className="search-icon" />
+        <input
+          className="input"
+          placeholder="Search city"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          style={{ paddingLeft: 36 }}
+        />
+        {results.length > 0 && (
+          <div className="search-results">
+            {results.map((r: any) => (
+              <button key={r.id} className="search-result" onClick={() => pick(r)}>
+                {r.name}<span className="country"> · {r.admin ? `${r.admin}, ` : ''}{r.country}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <nav className="tabs" role="tablist">
+        {TABS.map(t => (
+          <button
+            key={t.id}
+            role="tab"
+            aria-selected={tab === t.id}
+            className="tab"
+            onClick={() => setTab(t.id)}
           >
-            <h2 className="text-xl sm:text-2xl font-semibold mb-6 flex items-center gap-2">
-              <FiClock className="text-purple-400" />
-              Recent Searches
-            </h2>
-            <motion.div
-              variants={container}
-              initial="hidden"
-              animate="show"
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
-            >
-              {recentSearches.map((city) => (
-                <motion.div
-                  key={city}
-                  variants={item}
-                  className="glass glass-hover p-4 sm:p-6 rounded-xl cursor-pointer 
-                           transition-all duration-200 hover:scale-105"
-                  onClick={() => router.push(`/weather?city=${encodeURIComponent(city)}`)}
-                >
-                  <h3 className="text-lg sm:text-xl font-semibold">{city}</h3>
-                </motion.div>
+            {t.label}
+          </button>
+        ))}
+      </nav>
+
+      {err && <div className="card"><p>{err}</p></div>}
+      {loading && !weather && <div className="card"><p className="empty">Loading…</p></div>}
+
+      {weather && c && tab === 'today' && (
+        <>
+          <section className="card">
+            <p className="current-place">{displayName}{loc.country ? `, ${loc.country}` : ''}</p>
+            <div className="current">
+              <div>
+                <div className="current-temp">{Math.round(temp(c.temperatureC))}{tu}</div>
+                <div className="current-meta">
+                  {weatherLabel(c.weatherCode ?? 0)} · feels {Math.round(temp(c.feelsLikeC))}{tu}
+                </div>
+              </div>
+              {HeroIcon && (
+                <div className="current-icon">
+                  <HeroIcon size={56} strokeWidth={1.4} />
+                </div>
+              )}
+            </div>
+
+            <div className="stats">
+              <span className="stat"><Wind size={14} />{Math.round(speed(c.windKmh))} {speedUnit}</span>
+              <span className="stat"><Droplets size={14} />{Math.round(c.humidity)}%</span>
+              {c.pressure && <span className="stat"><Gauge size={14} />{Math.round(c.pressure)} hPa</span>}
+              {c.uvIndex != null && <span className="stat"><Sun size={14} />UV {Math.round(c.uvIndex)}</span>}
+              {c.visibility != null && <span className="stat"><Eye size={14} />{Math.round((c.visibility ?? 0) / 1000)} km</span>}
+            </div>
+
+            {weather.sources && (
+              <div className="sources">
+                {weather.sources.used.map((s: string) => <span key={s} className="source-ok">{s}</span>)}
+                {weather.sources.failed.map((s: string) => <span key={s} className="source-bad">{s}</span>)}
+              </div>
+            )}
+          </section>
+
+          <RainTimeline lat={loc.lat} lon={loc.lon} />
+          <OutfitCard weather={weather} />
+          <HourlyStrip weather={weather} />
+          <AirCard lat={loc.lat} lon={loc.lon} />
+          <SunCard weather={weather} />
+        </>
+      )}
+
+      {weather && tab === 'forecast' && (
+        <>
+          <HourlyStrip weather={weather} />
+          <DailyForecast weather={weather} />
+        </>
+      )}
+
+      {tab === 'map' && (
+        <div className="map-wrap">
+          <WeatherMap lat={loc.lat} lon={loc.lon} />
+        </div>
+      )}
+
+      {tab === 'saved' && (
+        <div className="card">
+          {fav.favorites.length === 0 ? (
+            <p className="empty">No saved places. Tap the star to save the current spot.</p>
+          ) : (
+            <div className="daily">
+              {fav.favorites.map(f => (
+                <div key={f.id} className="row" style={{ justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--border-soft)' }}>
+                  <button
+                    onClick={() => { setLoc({ lat: f.latitude, lon: f.longitude, name: f.name, country: f.country }); setTab('today'); }}
+                    style={{ background: 'transparent', border: 0, textAlign: 'left', color: 'var(--ink)', flex: 1, padding: 0 }}
+                  >
+                    {f.name}<span style={{ color: 'var(--ink-mute)' }}> · {f.country}</span>
+                  </button>
+                  <button className="btn" onClick={() => fav.remove(f.id)}>Remove</button>
+                </div>
               ))}
-            </motion.div>
-          </motion.section>
-        )}
+            </div>
+          )}
+        </div>
+      )}
 
-  {/* Footer */}
-  <Footer />
-      </main>
+      <nav className="bottom-nav" role="tablist" aria-label="Sections">
+        {TABS.map(t => {
+          const Icon = t.icon;
+          return (
+            <button
+              key={t.id}
+              role="tab"
+              aria-selected={tab === t.id}
+              className="bottom-nav-btn"
+              onClick={() => setTab(t.id)}
+            >
+              <Icon size={20} strokeWidth={1.7} />
+              <span>{t.label}</span>
+            </button>
+          );
+        })}
+      </nav>
 
-      {/* Tomato Character */}
-      <Tomato onChat={() => setIsChatOpen(true)} />
-
-      {/* AI Chat Widget */}
-      <AIChatWidget
-        isOpen={isChatOpen}
-        onClose={() => setIsChatOpen(false)}
-      />
-    </div>
+      {toast && <div className="toast">{toast}</div>}
+      <Tomato weather={weather} />
+    </main>
   );
 }

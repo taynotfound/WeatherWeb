@@ -1,41 +1,47 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
-  ],
+  content: ['./src/**/*.{js,ts,jsx,tsx,mdx}'],
+  darkMode: 'class',
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+      },
       colors: {
-        primary: 'var(--primary)',
-        secondary: 'var(--secondary)',
-        accent: 'var(--accent)',
-        background: 'var(--background)',
-        'glass-background': 'var(--glass-background)',
-        'glass-border': 'var(--glass-border)',
-        'glass-hover-bg': 'var(--glass-hover-bg)',
-        'glass-hover-border': 'var(--glass-hover-border)',
-        'text-primary': 'var(--text-primary)',
-        'text-secondary': 'var(--text-secondary)',
+        bg: {
+          DEFAULT: '#0a0a0f',
+          soft: '#111118',
+          card: 'rgba(255,255,255,0.04)',
+          border: 'rgba(255,255,255,0.08)',
+        },
+        accent: {
+          DEFAULT: '#a78bfa',
+          soft: '#c4b5fd',
+          glow: 'rgba(167, 139, 250, 0.5)',
+        }
       },
+      backdropBlur: { xs: '2px' },
       animation: {
-        "pulse-slow": "pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        'float': 'float 6s ease-in-out infinite',
+        'pulse-glow': 'pulseGlow 3s ease-in-out infinite',
+        'shimmer': 'shimmer 2s linear infinite',
       },
-      maxWidth: {
-        '4xl': '64rem',
-      },
-      spacing: {
-        '95': '95%',
-      },
-      backdropBlur: {
-        xs: '2px',
-      },
-      boxShadow: {
-        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.1)',
-        'glass-hover': '0 8px 32px 0 rgba(0, 0, 0, 0.2)',
+      keyframes: {
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-10px)' },
+        },
+        pulseGlow: {
+          '0%, 100%': { opacity: '0.5' },
+          '50%': { opacity: '1' },
+        },
+        shimmer: {
+          '0%': { backgroundPosition: '-1000px 0' },
+          '100%': { backgroundPosition: '1000px 0' },
+        },
       },
     },
   },
   plugins: [],
-}; 
+};
