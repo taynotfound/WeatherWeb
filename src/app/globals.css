@@ -1215,6 +1215,17 @@ button { cursor: pointer; }
 .space-iss { display: flex; gap: 10px; align-items: baseline; }
 .space-iss__coord { font-size: 14px; color: var(--ink); font-variant-numeric: tabular-nums; }
 .space-iss__dist { font-size: 12px; color: var(--accent); }
+.space-iss__meta { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 2px; }
+.space-iss__alt  { font-size: 12px; color: var(--ink-mute); }
+.space-iss__vel  { font-size: 12px; color: var(--secondary); }
+.space-live-dot  {
+  display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+  background: #73daca; margin-left: 6px; vertical-align: middle;
+  animation: live-pulse 2s ease-in-out infinite;
+}
+@keyframes live-pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .4; transform: scale(.75); } }
+.share-modal__png-preview { width: 100%; border-radius: 8px; margin: 8px 0; border: 1px solid var(--border-soft); }
+.share-btn--wide { grid-column: span 2; justify-content: center; }
 .space-showers { display: flex; flex-direction: column; gap: 8px; }
 .space-shower__name { font-size: 13px; color: var(--ink); font-weight: 500; }
 .space-shower__meta { font-size: 11px; color: var(--ink-mute); margin-top: 1px; }

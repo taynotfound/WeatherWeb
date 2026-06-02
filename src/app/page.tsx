@@ -406,7 +406,30 @@ export default function Home() {
 
       {toast && <div className="toast">{toast}</div>}
       {showShortcuts && <ShortcutsOverlay onClose={() => setShowShortcuts(false)} />}
-      {showShare && <ShareModal title={shareData.title} text={shareData.text} url={shareData.url} onClose={() => setShowShare(false)} />}
+      {showShare && (
+        <ShareModal
+          title={shareData.title}
+          text={shareData.text}
+          url={shareData.url}
+          onClose={() => setShowShare(false)}
+          weatherData={weather?.current ? {
+            temp: unit === 'imperial'
+              ? `${Math.round(weather.current.temperatureC * 9/5 + 32)}°F`
+              : `${Math.round(weather.current.temperatureC)}°C`,
+            feelsLike: unit === 'imperial'
+              ? `${Math.round(weather.current.feelsLikeC * 9/5 + 32)}°F`
+              : `${Math.round(weather.current.feelsLikeC)}°C`,
+            condition: weather.current.conditionLabel ?? '',
+            location: loc.name,
+            humidity: weather.current.humidity,
+            wind: unit === 'imperial'
+              ? `${Math.round(weather.current.windKmh * 0.621)} mph`
+              : `${Math.round(weather.current.windKmh)} km/h`,
+            code: weather.current.weatherCode,
+            isDay: weather.current.isDay === 1,
+          } : undefined}
+        />
+      )}
       <InstallPrompt />
       <Tomato weather={weather} />
     </main>
