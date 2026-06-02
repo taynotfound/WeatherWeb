@@ -92,7 +92,6 @@ export async function GET(req: NextRequest) {
             🍅 Tomato Weather
           </div>
           <div style={{ fontSize: 24, color: 'rgba(157,124,216,0.4)' }}>
-            open in browser
           </div>
         </div>
       </div>

@@ -100,17 +100,11 @@ async function renderCard(d: WeatherData | undefined): Promise<Blob> {
   // Bottom branding strip
   ctx.fillStyle = 'rgba(157,124,216,0.08)';
   ctx.fillRect(0, H - 90, W, 90);
-
+  // Branding
   ctx.font = 'bold 30px system-ui, sans-serif';
   ctx.fillStyle = 'rgba(157,124,216,0.7)';
   ctx.textAlign = 'left';
   ctx.fillText('🍅 Tomato Weather', 80, H - 30);
-
-  // Subtle right tagline
-  ctx.font = '26px system-ui, sans-serif';
-  ctx.fillStyle = 'rgba(157,124,216,0.4)';
-  ctx.textAlign = 'right';
-  ctx.fillText('open in browser', W - 80, H - 30);
 
   return new Promise(res => cv.toBlob(b => res(b!), 'image/png'));
 }
