@@ -27,7 +27,11 @@ import { useFavorites } from '@/lib/favorites';
 import { useUnits } from '@/lib/units';
 import { weatherLabel } from '@/lib/weatherIcon';
 import { AnimatedWeatherIcon } from '@/components/AnimatedWeatherIcon';
+import { ShareModal } from '@/components/ShareModal';
+import { SpaceCard } from '@/components/SpaceCard';
+import { FeelsSparkline } from '@/components/FeelsSparkline';
 import { buildShareText } from '@/lib/share';
+import { useAutoTint } from '@/lib/autoTint';
 
 type LocState = { lat: number; lon: number; name: string; country: string; countryCode: string };
 const DEFAULT: LocState = { lat: 51.5074, lon: -0.1278, name: 'London', country: 'United Kingdom', countryCode: 'GB' };
@@ -53,6 +57,7 @@ export default function Home() {
   const [toast, setToast] = useState<string | null>(null);
   const [locating, setLocating] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const fav = useFavorites();
   const { unit, setUnit, temp, tempUnit, speed, speedUnit } = useUnits();
@@ -129,7 +134,7 @@ export default function Home() {
       if (e.key === '?' || (e.shiftKey && e.key === '/')) {
         e.preventDefault(); setShowShortcuts(s => !s); return;
       }
-      if (e.key === 'Escape') { setShowShortcuts(false); return; }
+      if (e.key === 'Escape') { setShowShortcuts(false); setShowShare(false); return; }
       if (inField) return;
       if (e.key === '/') { e.preventDefault(); searchRef.current?.focus(); return; }
       if (e.key === '1') setTab('today');
@@ -170,32 +175,7 @@ export default function Home() {
   }
 
   async function share() {
-    const url = `${window.location.origin}/?lat=${loc.lat}&lon=${loc.lon}&name=${encodeURIComponent(loc.name)}`;
-    const summary = weather?.current
-      ? buildShareText({
-          location: { name: loc.name, admin: weather?.location?.admin, country: loc.country },
-          current: {
-            temperature_2m: weather.current.temperatureC,
-            apparent_temperature: weather.current.feelsLikeC,
-            weather_code: weather.current.weatherCode,
-            wind_speed_10m: weather.current.windKmh,
-            relative_humidity_2m: weather.current.humidity,
-          },
-          unit: unit === 'imperial' ? 'f' : 'c',
-          url,
-          alertCount: alerts?.count ?? 0,
-        })
-      : { title: `${loc.name} — Tomato`, text: `${loc.name} — Tomato`, url };
-
-    if (navigator.share) {
-      try { await navigator.share(summary); return; } catch {}
-    }
-    try {
-      await navigator.clipboard.writeText(`${summary.text}\n${summary.url}`);
-      setToast('Summary copied');
-    } catch {
-      setToast('Share failed');
-    }
+    setShowShare(true);
   }
 
   const c = weather?.current;
@@ -207,6 +187,28 @@ export default function Home() {
   const displayName = loc.name || `${loc.lat.toFixed(2)}°, ${loc.lon.toFixed(2)}°`;
   const alertCount = alerts?.count ?? 0;
   const worstSev = alerts?.alerts?.[0]?.severity;
+
+  // Auto-tint background based on current sky conditions
+  useAutoTint(weather);
+
+  const shareUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/?lat=${loc.lat}&lon=${loc.lon}&name=${encodeURIComponent(loc.name)}`
+    : '';
+  const shareData = weather?.current
+    ? buildShareText({
+        location: { name: loc.name, admin: weather?.location?.admin, country: loc.country },
+        current: {
+          temperature_2m: weather.current.temperatureC,
+          apparent_temperature: weather.current.feelsLikeC,
+          weather_code: weather.current.weatherCode,
+          wind_speed_10m: weather.current.windKmh,
+          relative_humidity_2m: weather.current.humidity,
+        },
+        unit: unit === 'imperial' ? 'f' : 'c',
+        url: shareUrl,
+        alertCount: alerts?.count ?? 0,
+      })
+    : { title: `${loc.name} — Tomato`, text: `${loc.name} — Tomato`, url: shareUrl };
 
   return (
     <main className="shell">
@@ -301,6 +303,7 @@ export default function Home() {
                 <div className="current-meta">
                   {weatherLabel(c.weatherCode ?? 0)} · feels {Math.round(temp(c.feelsLikeC))}{tu}
                 </div>
+                <FeelsSparkline weather={weather} temp={temp} />
               </div>
               {c && (
                 <div className="current-icon">
@@ -335,6 +338,7 @@ export default function Home() {
           <PollenCard lat={loc.lat} lon={loc.lon} />
           <LightningCard lat={loc.lat} lon={loc.lon} />
           <HistoryCard lat={loc.lat} lon={loc.lon} />
+          <SpaceCard lat={loc.lat} lon={loc.lon} />
           <MoonCard />
           <SunCard weather={weather} />
         </>
@@ -402,6 +406,7 @@ export default function Home() {
 
       {toast && <div className="toast">{toast}</div>}
       {showShortcuts && <ShortcutsOverlay onClose={() => setShowShortcuts(false)} />}
+      {showShare && <ShareModal title={shareData.title} text={shareData.text} url={shareData.url} onClose={() => setShowShare(false)} />}
       <InstallPrompt />
       <Tomato weather={weather} />
     </main>

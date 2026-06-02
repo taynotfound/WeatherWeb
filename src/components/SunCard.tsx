@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Sunrise, Sunset, Camera, Moon } from 'lucide-react';
 import { goldenHour, moonPhase, fmtTime } from '@/lib/astro';
 
@@ -8,7 +9,42 @@ function fmt(s: string) {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
+function countdown(target: Date): string {
+  const diff = target.getTime() - Date.now();
+  if (diff <= 0) return 'now';
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
+function nextGoldenWindow(gh: ReturnType<typeof goldenHour>) {
+  const now = Date.now();
+  const candidates = [
+    { label: 'Morning golden hour', start: gh.morningStart, end: gh.morningEnd },
+    { label: 'Evening golden hour', start: gh.eveningStart, end: gh.eveningEnd },
+  ];
+  for (const c of candidates) {
+    if (c.start && c.end) {
+      const s = new Date(c.start).getTime();
+      const e = new Date(c.end).getTime();
+      if (now >= s && now <= e) return { ...c, active: true, target: new Date(c.end) };
+      if (now < s) return { ...c, active: false, target: new Date(c.start) };
+    }
+  }
+  return null;
+}
+
 export function SunCard({ weather }: { weather: any }) {
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+
   const sr = weather?.daily?.sunrise?.[0];
   const ss = weather?.daily?.sunset?.[0];
   if (!sr || !ss) return null;
@@ -20,11 +56,13 @@ export function SunCard({ weather }: { weather: any }) {
 
   const gh = goldenHour(sr, ss);
   const moon = moonPhase(new Date());
-
-  // Day length
   const lenMin = Math.max(0, Math.round((end - start) / 60000));
   const hours = Math.floor(lenMin / 60);
   const mins = lenMin % 60;
+  const nextGH = nextGoldenWindow(gh);
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  void tick; // force re-render each second
 
   return (
     <section className="card">
@@ -45,6 +83,18 @@ export function SunCard({ weather }: { weather: any }) {
       <div style={{ marginTop: 6, fontSize: 11, color: 'var(--ink-mute)', textAlign: 'right' }}>
         Daylight: {hours}h {mins}m
       </div>
+
+      {/* Golden hour countdown chip */}
+      {nextGH && (
+        <div className={`golden-chip ${nextGH.active ? 'golden-chip--active' : ''}`}>
+          <Camera size={13} />
+          <span>
+            {nextGH.active
+              ? `🌅 Golden hour ends in ${countdown(nextGH.target)}`
+              : `📸 ${nextGH.label} in ${countdown(nextGH.target)}`}
+          </span>
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 14, paddingTop: 12, borderTop: '1px dashed var(--border-soft)' }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
