@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import {
   Search, Star, Wind, Droplets, Eye, Gauge,
   Sun, CalendarDays, Map as MapIcon, Bookmark,
-  MapPin, Share2,
+  MapPin, Share2, AlertTriangle,
 } from 'lucide-react';
 import { Tomato } from '@/components/Tomato';
 import { OutfitCard } from '@/components/OutfitCard';
@@ -14,22 +14,30 @@ import { HourlyStrip } from '@/components/HourlyStrip';
 import { DailyForecast } from '@/components/DailyForecast';
 import { WeatherMap } from '@/components/WeatherMap';
 import { AirCard } from '@/components/AirCard';
+import AlertsCard from '@/components/AlertsCard';
+import AIInsights from '@/components/AIInsights';
+import InstallPrompt from '@/components/InstallPrompt';
 import { useFavorites } from '@/lib/favorites';
 import { useUnits } from '@/lib/units';
 import { weatherIcon, weatherLabel } from '@/lib/weatherIcon';
+import { buildShareText } from '@/lib/share';
 
-const DEFAULT = { lat: 51.5074, lon: -0.1278, name: 'London', country: 'United Kingdom' };
+type LocState = { lat: number; lon: number; name: string; country: string; countryCode: string };
+const DEFAULT: LocState = { lat: 51.5074, lon: -0.1278, name: 'London', country: 'United Kingdom', countryCode: 'GB' };
 const TABS = [
   { id: 'today',    label: 'today',    icon: Sun },
   { id: 'forecast', label: 'forecast', icon: CalendarDays },
+  { id: 'alerts',   label: 'alerts',   icon: AlertTriangle },
   { id: 'map',      label: 'map',      icon: MapIcon },
   { id: 'saved',    label: 'saved',    icon: Bookmark },
 ] as const;
 type Tab = (typeof TABS)[number]['id'];
 
 export default function Home() {
-  const [loc, setLoc] = useState(DEFAULT);
+  const [loc, setLoc] = useState<LocState>(DEFAULT);
   const [weather, setWeather] = useState<any>(null);
+  const [air, setAir] = useState<any>(null);
+  const [alerts, setAlerts] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>('today');
@@ -40,17 +48,15 @@ export default function Home() {
   const fav = useFavorites();
   const { unit, setUnit, temp, tempUnit, speed, speedUnit } = useUnits();
 
-  // Read URL params on mount (share links)
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
     const lat = parseFloat(p.get('lat') || '');
     const lon = parseFloat(p.get('lon') || '');
     const name = p.get('name');
     if (isFinite(lat) && isFinite(lon)) {
-      setLoc({ lat, lon, name: name || 'Shared', country: '' });
+      setLoc({ lat, lon, name: name || 'Shared', country: '', countryCode: '' });
       return;
     }
-    // No share link → try geolocation
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
       p => setLoc(l => ({ ...l, lat: p.coords.latitude, lon: p.coords.longitude, name: '' })),
@@ -70,13 +76,27 @@ export default function Home() {
         setErr(null);
         setWeather(j);
         if (j?.location?.name) {
-          setLoc(l => ({ ...l, name: j.location.name, country: j.location.country || '' }));
+          setLoc(l => ({
+            ...l,
+            name: j.location.name,
+            country: j.location.country || '',
+            countryCode: j.location.countryCode || '',
+          }));
         }
       })
       .catch(e => alive && setErr(String(e)))
       .finally(() => alive && setLoading(false));
     return () => { alive = false; };
   }, [loc.lat, loc.lon]);
+
+  // Fetch air + alerts in parallel (used by AI Insights too)
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/air?lat=${loc.lat}&lon=${loc.lon}`).then(r => r.json()).then(j => alive && setAir(j)).catch(() => {});
+    const cc = loc.countryCode ? `&country=${loc.countryCode}` : '';
+    fetch(`/api/alerts?lat=${loc.lat}&lon=${loc.lon}${cc}`).then(r => r.json()).then(j => alive && setAlerts(j)).catch(() => {});
+    return () => { alive = false; };
+  }, [loc.lat, loc.lon, loc.countryCode]);
 
   useEffect(() => {
     if (query.length < 2) { setResults([]); return; }
@@ -88,12 +108,15 @@ export default function Home() {
 
   useEffect(() => {
     if (!toast) return;
-    const t = setTimeout(() => setToast(null), 2000);
+    const t = setTimeout(() => setToast(null), 2200);
     return () => clearTimeout(t);
   }, [toast]);
 
   function pick(r: any) {
-    setLoc({ lat: r.latitude, lon: r.longitude, name: r.name, country: r.country });
+    setLoc({
+      lat: r.latitude, lon: r.longitude, name: r.name,
+      country: r.country, countryCode: r.country_code || '',
+    });
     setQuery('');
     setResults([]);
     setTab('today');
@@ -104,7 +127,7 @@ export default function Home() {
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       p => {
-        setLoc({ lat: p.coords.latitude, lon: p.coords.longitude, name: '', country: '' });
+        setLoc({ lat: p.coords.latitude, lon: p.coords.longitude, name: '', country: '', countryCode: '' });
         setLocating(false);
       },
       () => { setLocating(false); setToast('Location denied'); },
@@ -114,13 +137,28 @@ export default function Home() {
 
   async function share() {
     const url = `${window.location.origin}/?lat=${loc.lat}&lon=${loc.lon}&name=${encodeURIComponent(loc.name)}`;
-    const title = `${loc.name} — Tomato`;
+    const summary = weather?.current
+      ? buildShareText({
+          location: { name: loc.name, admin: weather?.location?.admin, country: loc.country },
+          current: {
+            temperature_2m: weather.current.temperatureC,
+            apparent_temperature: weather.current.feelsLikeC,
+            weather_code: weather.current.weatherCode,
+            wind_speed_10m: weather.current.windKmh,
+            relative_humidity_2m: weather.current.humidity,
+          },
+          unit: unit === 'imperial' ? 'f' : 'c',
+          url,
+          alertCount: alerts?.count ?? 0,
+        })
+      : { title: `${loc.name} — Tomato`, text: `${loc.name} — Tomato`, url };
+
     if (navigator.share) {
-      try { await navigator.share({ title, url }); return; } catch {}
+      try { await navigator.share(summary); return; } catch {}
     }
     try {
-      await navigator.clipboard.writeText(url);
-      setToast('Link copied');
+      await navigator.clipboard.writeText(`${summary.text}\n${summary.url}`);
+      setToast('Summary copied');
     } catch {
       setToast('Share failed');
     }
@@ -132,6 +170,8 @@ export default function Home() {
   const HeroIcon = c ? weatherIcon(c.weatherCode ?? 0, c.isDay !== false) : null;
   const tu = tempUnit.replace('°F', '°');
   const displayName = loc.name || `${loc.lat.toFixed(2)}°, ${loc.lon.toFixed(2)}°`;
+  const alertCount = alerts?.count ?? 0;
+  const worstSev = alerts?.alerts?.[0]?.severity;
 
   return (
     <main className="shell">
@@ -202,6 +242,9 @@ export default function Home() {
             onClick={() => setTab(t.id)}
           >
             {t.label}
+            {t.id === 'alerts' && alertCount > 0 && (
+              <span className={`tab__badge tab__badge--${worstSev || 'warn'}`}>{alertCount}</span>
+            )}
           </button>
         ))}
       </nav>
@@ -243,6 +286,8 @@ export default function Home() {
             )}
           </section>
 
+          {alertCount > 0 && <AlertsCard lat={loc.lat} lon={loc.lon} country={loc.countryCode} />}
+          <AIInsights weather={weather} alerts={alerts} air={air} />
           <RainTimeline lat={loc.lat} lon={loc.lon} />
           <OutfitCard weather={weather} />
           <HourlyStrip weather={weather} />
@@ -256,6 +301,10 @@ export default function Home() {
           <HourlyStrip weather={weather} />
           <DailyForecast weather={weather} />
         </>
+      )}
+
+      {tab === 'alerts' && (
+        <AlertsCard lat={loc.lat} lon={loc.lon} country={loc.countryCode} />
       )}
 
       {tab === 'map' && (
@@ -273,7 +322,7 @@ export default function Home() {
               {fav.favorites.map(f => (
                 <div key={f.id} className="row" style={{ justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--border-soft)' }}>
                   <button
-                    onClick={() => { setLoc({ lat: f.latitude, lon: f.longitude, name: f.name, country: f.country }); setTab('today'); }}
+                    onClick={() => { setLoc({ lat: f.latitude, lon: f.longitude, name: f.name, country: f.country, countryCode: '' }); setTab('today'); }}
                     style={{ background: 'transparent', border: 0, textAlign: 'left', color: 'var(--ink)', flex: 1, padding: 0 }}
                   >
                     {f.name}<span style={{ color: 'var(--ink-mute)' }}> · {f.country}</span>
@@ -299,12 +348,16 @@ export default function Home() {
             >
               <Icon size={20} strokeWidth={1.7} />
               <span>{t.label}</span>
+              {t.id === 'alerts' && alertCount > 0 && (
+                <span className={`nav-badge nav-badge--${worstSev || 'warn'}`}>{alertCount}</span>
+              )}
             </button>
           );
         })}
       </nav>
 
       {toast && <div className="toast">{toast}</div>}
+      <InstallPrompt />
       <Tomato weather={weather} />
     </main>
   );

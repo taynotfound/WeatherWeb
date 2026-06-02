@@ -28,6 +28,7 @@ async function geocode(q: string) {
     longitude: hit.longitude,
     name: hit.name,
     country: hit.country,
+    country_code: hit.country_code || '',
     admin: hit.admin1 || '',
   };
 }
@@ -54,7 +55,7 @@ async function reverse(lat: number, lon: number) {
     if (r.ok) {
       const j = await r.json();
       const name = j.city || j.locality || j.principalSubdivision || j.countryName || null;
-      if (name) return { name, country: j.countryName || '', admin1: j.principalSubdivision || '' };
+      if (name) return { name, country: j.countryName || '', countryCode: j.countryCode || '', admin1: j.principalSubdivision || '' };
     }
   } catch {}
   // Last resort: Nominatim (slower, has UA requirements)
@@ -67,7 +68,7 @@ async function reverse(lat: number, lon: number) {
       const j = await r.json();
       const a = j.address || {};
       const name = a.city || a.town || a.village || a.municipality || a.county || a.state || j.name || null;
-      if (name) return { name, country: a.country || '', admin1: a.state || '' };
+      if (name) return { name, country: a.country || '', countryCode: (a.country_code || '').toUpperCase(), admin1: a.state || '' };
     }
   } catch {}
   return null;
@@ -135,17 +136,18 @@ export async function GET(req: NextRequest) {
 
   try {
     let latitude: number, longitude: number;
-    let name = '', country = '', admin = '';
+    let name = '', country = '', countryCode = '', admin = '';
 
     if (q) {
       const geo = await geocode(q);
       latitude = geo.latitude; longitude = geo.longitude;
       name = geo.name; country = geo.country; admin = geo.admin;
+      countryCode = (geo.country_code || '').toUpperCase();
     } else if (latParam && lonParam) {
       latitude = parseFloat(latParam);
       longitude = parseFloat(lonParam);
       const rev = await reverse(latitude, longitude);
-      if (rev) { name = rev.name; country = rev.country; admin = rev.admin1 || ''; }
+      if (rev) { name = rev.name; country = rev.country; admin = rev.admin1 || ''; countryCode = (rev.countryCode || '').toUpperCase(); }
     } else {
       return NextResponse.json({ error: 'Provide q or lat+lon' }, { status: 400 });
     }
@@ -167,7 +169,7 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({
-      location: { name: name || `${latitude.toFixed(2)}°, ${longitude.toFixed(2)}°`, country, admin, latitude, longitude },
+      location: { name: name || `${latitude.toFixed(2)}°, ${longitude.toFixed(2)}°`, country, countryCode, admin, latitude, longitude },
       current: mergeCurrent(om ?? {}, metno ?? {}, sources),
       hourly: om?.hourly ?? null,
       daily: om?.daily ?? null,

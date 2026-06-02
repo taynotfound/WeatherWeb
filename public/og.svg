@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1a1625"/>
+      <stop offset="1" stop-color="#2d2438"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.8" cy="0.2" r="0.6">
+      <stop offset="0" stop-color="#9d7cd8" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#9d7cd8" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+  <g transform="translate(880 140)">
+    <circle r="120" fill="#ff6b6b"/>
+    <path d="M -10 -110 Q 0 -150 30 -135 Q 40 -110 10 -100 Z" fill="#7aa2f7"/>
+    <circle cx="-35" cy="-15" r="10" fill="#1a1625"/>
+    <circle cx="35" cy="-15" r="10" fill="#1a1625"/>
+    <path d="M -30 25 Q 0 50 30 25" stroke="#1a1625" stroke-width="6" fill="none" stroke-linecap="round"/>
+  </g>
+  <g font-family="system-ui, -apple-system, sans-serif" fill="#dcd7e8">
+    <text x="80" y="280" font-size="96" font-weight="800">Tomato</text>
+    <text x="80" y="350" font-size="42" font-weight="500" fill="#9d7cd8">weather, with attitude</text>
+    <text x="80" y="500" font-size="26" fill="#9b8db5">forecast · radar · air quality · severe alerts</text>
+    <text x="80" y="540" font-size="22" fill="#7a6b94" font-family="ui-monospace, monospace">// open-meteo · met.no · rainviewer · meteoalarm · nws</text>
+  </g>
+</svg>
