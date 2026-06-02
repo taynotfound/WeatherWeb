@@ -47,14 +47,14 @@ export const metadata: Metadata = {
     description:
       'Hourly forecast, rain nowcast, radar, air quality and severe-weather alerts. With a sassy tomato.',
     url: SITE,
-    images: [{ url: '/og.svg', width: 1200, height: 630, alt: 'Tomato weather' }],
+    images: [{ url: '/api/og', width: 1200, height: 630, alt: 'Tomato weather' }],
     locale: 'en_US',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Tomato — weather, with attitude',
     description: 'Forecast, radar, AQI and severe-weather alerts. With a sassy tomato.',
-    images: ['/og.svg'],
+    images: ['/api/og'],
   },
   robots: {
     index: true,

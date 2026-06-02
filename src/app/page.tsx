@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   Search, Star, Wind, Droplets, Eye, Gauge,
   Sun, CalendarDays, Map as MapIcon, Bookmark,
-  MapPin, Share2, AlertTriangle, Keyboard,
+  MapPin, Share2, AlertTriangle, Keyboard, Telescope,
 } from 'lucide-react';
 import { Tomato } from '@/components/Tomato';
 import { OutfitCard } from '@/components/OutfitCard';
@@ -28,7 +28,7 @@ import { useUnits } from '@/lib/units';
 import { weatherLabel } from '@/lib/weatherIcon';
 import { AnimatedWeatherIcon } from '@/components/AnimatedWeatherIcon';
 import { ShareModal } from '@/components/ShareModal';
-import { SpaceCard } from '@/components/SpaceCard';
+import { SpaceTab } from '@/components/SpaceTab';
 import { FeelsSparkline } from '@/components/FeelsSparkline';
 import { buildShareText } from '@/lib/share';
 import { useAutoTint } from '@/lib/autoTint';
@@ -40,6 +40,7 @@ const TABS = [
   { id: 'forecast', label: 'forecast', icon: CalendarDays },
   { id: 'alerts',   label: 'alerts',   icon: AlertTriangle },
   { id: 'map',      label: 'map',      icon: MapIcon },
+  { id: 'space',    label: 'space',    icon: Telescope },
   { id: 'saved',    label: 'saved',    icon: Bookmark },
 ] as const;
 type Tab = (typeof TABS)[number]['id'];
@@ -338,7 +339,6 @@ export default function Home() {
           <PollenCard lat={loc.lat} lon={loc.lon} />
           <LightningCard lat={loc.lat} lon={loc.lon} />
           <HistoryCard lat={loc.lat} lon={loc.lon} />
-          <SpaceCard lat={loc.lat} lon={loc.lon} />
           <MoonCard />
           <SunCard weather={weather} />
         </>
@@ -359,6 +359,10 @@ export default function Home() {
         <div className="map-wrap">
           <WeatherMap lat={loc.lat} lon={loc.lon} />
         </div>
+      )}
+
+      {tab === 'space' && (
+        <SpaceTab lat={loc.lat} lon={loc.lon} />
       )}
 
       {tab === 'saved' && (

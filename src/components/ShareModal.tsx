@@ -1,207 +1,149 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { X, Copy, Twitter, MessageCircle, Download, Link, Check, Image as ImageIcon } from 'lucide-react';
+import { X, Copy, Twitter, MessageCircle, Download, Link, Check, Loader } from 'lucide-react';
+
+type WeatherData = {
+  temp: string; feelsLike: string; condition: string;
+  location: string; humidity: number; wind: string;
+  code: number; isDay: boolean;
+};
 
 type Props = {
-  title: string;
-  text: string;
-  url: string;
-  weatherData?: {
-    temp: string;
-    feelsLike: string;
-    condition: string;
-    location: string;
-    humidity: number;
-    wind: string;
-    code: number;
-    isDay: boolean;
-  };
+  title: string; text: string; url: string;
+  weatherData?: WeatherData;
   onClose: () => void;
 };
 
-// WMO condition label
-const WMO_EMOJI: Record<number, string> = {
-  0: '☀️', 1: '🌤', 2: '⛅', 3: '☁️',
-  45: '🌫', 48: '🌫',
-  51: '🌦', 53: '🌦', 55: '🌧',
-  61: '🌧', 63: '🌧', 65: '🌧',
-  71: '❄️', 73: '❄️', 75: '❄️', 77: '🌨',
-  80: '🌦', 81: '🌧', 82: '⛈',
-  85: '🌨', 86: '🌨',
-  95: '⛈', 96: '⛈', 99: '⛈',
+// WMO code → emoji
+const WMO: Record<number, string> = {
+  0:'☀️',1:'🌤',2:'⛅',3:'☁️',45:'🌫',48:'🌫',
+  51:'🌦',53:'🌦',55:'🌧',61:'🌧',63:'🌧',65:'🌧',
+  71:'❄️',73:'❄️',75:'❄️',77:'🌨',80:'🌦',81:'🌧',
+  82:'⛈',85:'🌨',86:'🌨',95:'⛈',96:'⛈',99:'⛈',
 };
 
-function wmoEmoji(code: number): string {
-  return WMO_EMOJI[code] ?? '🌡';
-}
+async function renderCard(d: WeatherData | undefined): Promise<Blob> {
+  const W = 1200, H = 630; // OG standard
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d')!;
 
-async function drawWeatherCard(data: Props['weatherData'], text: string, url: string): Promise<string> {
-  const W = 640, H = 360;
-  const canvas = document.createElement('canvas');
-  canvas.width = W; canvas.height = H;
-  const ctx = canvas.getContext('2d')!;
-
-  // Background gradient — deep purple
+  // Background
   const bg = ctx.createLinearGradient(0, 0, W, H);
-  bg.addColorStop(0, '#1a1625');
-  bg.addColorStop(1, '#2d2438');
+  bg.addColorStop(0, '#13111c');
+  bg.addColorStop(0.5, '#1a1625');
+  bg.addColorStop(1, '#0f0d17');
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
 
-  // Subtle grid pattern
-  ctx.strokeStyle = 'rgba(157,124,216,0.06)';
-  ctx.lineWidth = 1;
-  for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
-  for (let y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  // Subtle noise dots
+  ctx.fillStyle = 'rgba(157,124,216,0.03)';
+  for (let i = 0; i < 400; i++) {
+    const x = Math.random() * W, y = Math.random() * H;
+    ctx.beginPath(); ctx.arc(x, y, Math.random() * 2, 0, Math.PI * 2); ctx.fill();
+  }
 
-  // Card surface
-  ctx.fillStyle = 'rgba(45,36,56,0.95)';
-  roundRect(ctx, 20, 20, W - 40, H - 40, 12);
-  ctx.fill();
+  // Left accent bar
+  const bar = ctx.createLinearGradient(0, 0, 0, H);
+  bar.addColorStop(0, '#9d7cd8');
+  bar.addColorStop(1, '#7aa2f7');
+  ctx.fillStyle = bar;
+  ctx.fillRect(0, 0, 6, H);
 
-  // Card border
-  ctx.strokeStyle = 'rgba(157,124,216,0.25)';
-  ctx.lineWidth = 1;
-  roundRect(ctx, 20, 20, W - 40, H - 40, 12);
-  ctx.stroke();
-
-  // Accent stripe top
-  const stripe = ctx.createLinearGradient(20, 0, W - 20, 0);
-  stripe.addColorStop(0, '#9d7cd8');
-  stripe.addColorStop(1, '#7aa2f7');
-  ctx.fillStyle = stripe;
-  roundRect(ctx, 20, 20, W - 40, 3, 12);
-  ctx.fill();
-
-  if (data) {
-    // Big weather emoji
-    ctx.font = '72px serif';
+  if (d) {
+    // Big emoji
+    ctx.font = '160px serif';
     ctx.textAlign = 'left';
-    ctx.fillText(wmoEmoji(data.code), 44, 130);
+    ctx.fillText(WMO[d.code] ?? '🌡', 80, 260);
 
-    // Temperature
-    ctx.font = 'bold 72px system-ui, -apple-system, sans-serif';
+    // Temperature — huge
+    ctx.font = `bold 180px system-ui, -apple-system, Arial, sans-serif`;
     ctx.fillStyle = '#dcd7e8';
-    ctx.textAlign = 'left';
-    ctx.fillText(data.temp, 130, 130);
+    ctx.fillText(d.temp, 80, 450);
 
-    // Location
-    ctx.font = '500 22px system-ui, sans-serif';
+    // Measure temp width for condition placement
+    const tempW = ctx.measureText(d.temp).width;
+
+    // Condition chip
+    ctx.font = '40px system-ui, sans-serif';
     ctx.fillStyle = '#9d7cd8';
-    ctx.fillText(data.location, 44, 162);
+    ctx.fillText(d.condition, 80, 510);
 
-    // Condition line
-    ctx.font = '16px system-ui, sans-serif';
-    ctx.fillStyle = '#a89bc2';
-    ctx.fillText(`${data.condition}  ·  feels ${data.feelsLike}`, 44, 190);
+    // Location — top right area
+    ctx.font = 'bold 52px system-ui, sans-serif';
+    ctx.fillStyle = '#dcd7e8';
+    ctx.textAlign = 'right';
+    ctx.fillText(d.location, W - 80, 200);
 
-    // Stats row
-    const stats = [
-      { icon: '💨', val: data.wind },
-      { icon: '💧', val: `${data.humidity}%` },
+    // Meta chips (feels, humidity, wind)
+    const chips = [
+      `feels ${d.feelsLike}`,
+      `${d.humidity}% humidity`,
+      `${d.wind}`,
     ];
-    ctx.font = '15px system-ui, sans-serif';
+    ctx.font = '34px system-ui, sans-serif';
     ctx.fillStyle = '#a89bc2';
-    let sx = 44;
-    for (const s of stats) {
-      ctx.font = '15px serif';
-      ctx.fillText(s.icon, sx, 220);
-      ctx.font = '15px system-ui, sans-serif';
-      ctx.fillText(s.val, sx + 24, 220);
-      sx += 100;
-    }
-
-    // Divider
-    ctx.strokeStyle = 'rgba(157,124,216,0.2)';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(44, 238); ctx.lineTo(W - 44, 238); ctx.stroke();
+    ctx.textAlign = 'right';
+    chips.forEach((c, i) => ctx.fillText(c, W - 80, 260 + i * 52));
+  } else {
+    // No data — just branding
+    ctx.font = 'bold 80px system-ui, sans-serif';
+    ctx.fillStyle = '#dcd7e8';
+    ctx.textAlign = 'center';
+    ctx.fillText('🍅 Tomato Weather', W / 2, H / 2 - 20);
+    ctx.font = '36px system-ui, sans-serif';
+    ctx.fillStyle = '#a89bc2';
+    ctx.fillText('your weather, made beautiful', W / 2, H / 2 + 50);
   }
 
-  // Share text (wrap)
-  ctx.font = '14px system-ui, sans-serif';
-  ctx.fillStyle = '#a89bc2';
+  // Bottom branding strip
+  ctx.fillStyle = 'rgba(157,124,216,0.08)';
+  ctx.fillRect(0, H - 90, W, 90);
+
+  ctx.font = 'bold 30px system-ui, sans-serif';
+  ctx.fillStyle = 'rgba(157,124,216,0.7)';
   ctx.textAlign = 'left';
-  const lines = wrapText(ctx, text, W - 90, 14);
-  lines.slice(0, 3).forEach((line, i) => ctx.fillText(line, 44, 258 + i * 20));
+  ctx.fillText('🍅 Tomato Weather', 80, H - 30);
 
-  // URL chip
-  ctx.fillStyle = 'rgba(157,124,216,0.15)';
-  roundRect(ctx, 44, H - 70, W - 88, 24, 6);
-  ctx.fill();
-  ctx.font = '12px monospace';
-  ctx.fillStyle = '#9d7cd8';
-  ctx.textAlign = 'center';
-  ctx.fillText(url.slice(0, 60) + (url.length > 60 ? '…' : ''), W / 2, H - 52);
-
-  // Branding
-  ctx.font = 'bold 14px system-ui, sans-serif';
-  ctx.fillStyle = 'rgba(157,124,216,0.6)';
+  // Subtle right tagline
+  ctx.font = '26px system-ui, sans-serif';
+  ctx.fillStyle = 'rgba(157,124,216,0.4)';
   ctx.textAlign = 'right';
-  ctx.fillText('🍅 Tomato Weather', W - 44, H - 30);
+  ctx.fillText('open in browser', W - 80, H - 30);
 
-  return canvas.toDataURL('image/png');
-}
-
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
-}
-
-function wrapText(ctx: CanvasRenderingContext2D, text: string, maxW: number, _size: number): string[] {
-  const words = text.split(' ');
-  const lines: string[] = [];
-  let line = '';
-  for (const word of words) {
-    const test = line ? `${line} ${word}` : word;
-    if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = word; }
-    else line = test;
-  }
-  if (line) lines.push(line);
-  return lines;
+  return new Promise(res => cv.toBlob(b => res(b!), 'image/png'));
 }
 
 export function ShareModal({ title, text, url, weatherData, onClose }: Props) {
   const [copied, setCopied] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
-  const [pngUrl, setPngUrl] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
-  const imgRef = useRef<HTMLAnchorElement>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  async function copyText() {
+  async function handleCopy() {
     try { await navigator.clipboard.writeText(`${text}\n${url}`); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch {}
   }
-
-  async function copyLink() {
+  async function handleCopyLink() {
     try { await navigator.clipboard.writeText(url); setCopiedLink(true); setTimeout(() => setCopiedLink(false), 2000); } catch {}
   }
-
-  async function genAndDownload() {
-    setGenerating(true);
-    try {
-      const dataUrl = await drawWeatherCard(weatherData, text, url);
-      setPngUrl(dataUrl);
-      // trigger download
-      const a = document.createElement('a');
-      a.href = dataUrl;
-      a.download = `tomato-${Date.now()}.png`;
-      a.click();
-    } finally {
-      setGenerating(false);
-    }
-  }
-
-  function openTwitter() {
+  function handleTwitter() {
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`${text}\n${url}`)}`, '_blank', 'noopener');
   }
-
-  function openWhatsApp() {
+  function handleWhatsApp() {
     window.open(`https://wa.me/?text=${encodeURIComponent(`${text}\n${url}`)}`, '_blank', 'noopener');
+  }
+  async function handleDownload() {
+    setGenerating(true);
+    try {
+      const blob = await renderCard(weatherData);
+      const objUrl = URL.createObjectURL(blob);
+      setPreviewUrl(objUrl);
+      const a = document.createElement('a');
+      a.href = objUrl;
+      a.download = `tomato-weather-${Date.now()}.png`;
+      a.click();
+    } finally { setGenerating(false); }
   }
 
   return (
@@ -212,38 +154,34 @@ export function ShareModal({ title, text, url, weatherData, onClose }: Props) {
           <button className="btn-icon" onClick={onClose} aria-label="Close"><X size={18} /></button>
         </div>
 
-        <div className="share-modal__preview">
-          <p className="share-modal__text">{text}</p>
-          <p className="share-modal__url">{url}</p>
-        </div>
-
-        {pngUrl && (
-          <img src={pngUrl} alt="Weather card preview" className="share-modal__png-preview" />
+        {previewUrl && (
+          <img src={previewUrl} alt="Weather card" className="share-modal__png-preview" />
         )}
 
+        <div className="share-modal__preview">
+          <p className="share-modal__text">{text}</p>
+        </div>
+
         <div className="share-modal__actions">
-          <button className="share-btn" onClick={copyText}>
-            {copied ? <Check size={18} /> : <Copy size={18} />}
-            <span>{copied ? 'Copied!' : 'Copy text'}</span>
+          <button className="share-btn" onClick={handleCopy}>
+            {copied ? <Check size={16} /> : <Copy size={16} />}
+            <span>{copied ? 'Copied!' : 'Copy'}</span>
           </button>
-          <button className="share-btn" onClick={copyLink}>
-            {copiedLink ? <Check size={18} /> : <Link size={18} />}
-            <span>{copiedLink ? 'Copied!' : 'Copy link'}</span>
+          <button className="share-btn" onClick={handleCopyLink}>
+            {copiedLink ? <Check size={16} /> : <Link size={16} />}
+            <span>{copiedLink ? 'Copied!' : 'Link'}</span>
           </button>
-          <button className="share-btn" onClick={openTwitter}>
-            <Twitter size={18} />
-            <span>Twitter / X</span>
+          <button className="share-btn" onClick={handleTwitter}>
+            <Twitter size={16} /><span>Twitter</span>
           </button>
-          <button className="share-btn" onClick={openWhatsApp}>
-            <MessageCircle size={18} />
-            <span>WhatsApp</span>
+          <button className="share-btn" onClick={handleWhatsApp}>
+            <MessageCircle size={16} /><span>WhatsApp</span>
           </button>
-          <button className="share-btn share-btn--wide" onClick={genAndDownload} disabled={generating}>
-            {generating ? <ImageIcon size={18} /> : <Download size={18} />}
-            <span>{generating ? 'Drawing card…' : pngUrl ? 'Download again' : 'Save as PNG'}</span>
+          <button className="share-btn share-btn--wide" onClick={handleDownload} disabled={generating}>
+            {generating ? <Loader size={16} className="spin" /> : <Download size={16} />}
+            <span>{generating ? 'Rendering…' : 'Save as PNG'}</span>
           </button>
         </div>
-        <a ref={imgRef} style={{ display: 'none' }} />
       </div>
     </div>
   );
