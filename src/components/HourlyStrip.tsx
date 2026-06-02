@@ -1,6 +1,6 @@
 'use client';
 
-import { weatherIcon } from '@/lib/weatherIcon';
+import { AnimatedWeatherIcon } from './AnimatedWeatherIcon';
 import { useUnits } from '@/lib/units';
 
 export function HourlyStrip({ weather }: { weather: any }) {
@@ -26,13 +26,12 @@ export function HourlyStrip({ weather }: { weather: any }) {
       </div>
       <div className="hourly">
         {rows.map((r: any) => {
-          const Icon = weatherIcon(r.code, r.isDay);
           const d = new Date(r.t);
           const label = d.getHours().toString().padStart(2, '0') + ':00';
           return (
             <div key={r.t} className="hour">
               <span className="h-time">{label}</span>
-              <Icon size={20} strokeWidth={1.6} />
+              <AnimatedWeatherIcon code={r.code} isDay={r.isDay} size={20} />
               <span className="h-temp">{Math.round(temp(r.temp))}{tempUnit.replace('°F','°')}</span>
               {r.pop >= 20 && (
                 <span style={{ fontSize: 10, color: 'var(--secondary)' }}>{Math.round(r.pop)}%</span>

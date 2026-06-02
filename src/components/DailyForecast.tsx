@@ -1,6 +1,7 @@
 'use client';
 
-import { weatherIcon, weatherLabel } from '@/lib/weatherIcon';
+import { weatherLabel } from '@/lib/weatherIcon';
+import { AnimatedWeatherIcon } from './AnimatedWeatherIcon';
 import { useUnits } from '@/lib/units';
 
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -25,7 +26,6 @@ export function DailyForecast({ weather }: { weather: any }) {
           const min = d.temperature_2m_min[i];
           const max = d.temperature_2m_max[i];
           const code = d.weather_code?.[i] ?? 0;
-          const Icon = weatherIcon(code, true);
           const left = ((min - allMin) / span) * 100;
           const width = ((max - min) / span) * 100;
           const pop = d.precipitation_probability_max?.[i] ?? 0;
@@ -39,7 +39,7 @@ export function DailyForecast({ weather }: { weather: any }) {
                   </span>
                 )}
               </div>
-              <div className="daily-icon"><Icon size={18} strokeWidth={1.6} /></div>
+              <div className="daily-icon"><AnimatedWeatherIcon code={code} isDay={true} size={18} /></div>
               <div className="daily-bar"><span style={{ left: `${left}%`, width: `${Math.max(4, width)}%` }} /></div>
               <div className="daily-temps">
                 <span className="lo">{Math.round(temp(min))}{tu}</span>

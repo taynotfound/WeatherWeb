@@ -1106,3 +1106,42 @@ button { cursor: pointer; }
   border-radius: 8px; cursor: pointer; font-family: inherit;
 }
 .shortcuts-close:hover { color: var(--ink); border-color: var(--primary); }
+
+/* ── animated weather icons ─────────────────────────────────────────── */
+.wxicon { display: inline-block; transform-origin: 50% 50%; }
+.wxicon--clear { animation: wxSpin 18s linear infinite; color: var(--accent); }
+.wxicon--partly { animation: wxBob 4.5s ease-in-out infinite; color: var(--ink); }
+.wxicon--cloud  { animation: wxDrift 6s ease-in-out infinite; }
+.wxicon--fog    { animation: wxFade 3.2s ease-in-out infinite; }
+.wxicon--drizzle, .wxicon--rain { animation: wxRain 1.4s ease-in-out infinite; color: #7aa2f7; }
+.wxicon--snow   { animation: wxBob 3s ease-in-out infinite; color: #cfe3ff; }
+.wxicon--storm  { animation: wxFlash 1.8s steps(1) infinite; color: var(--accent); filter: drop-shadow(0 0 6px rgba(255,158,100,0.35)); }
+@keyframes wxSpin  { to { transform: rotate(360deg); } }
+@keyframes wxBob   { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes wxDrift { 0%,100% { transform: translateX(0); } 50% { transform: translateX(4px); } }
+@keyframes wxFade  { 0%,100% { opacity: 0.55; } 50% { opacity: 1; } }
+@keyframes wxRain  { 0% { transform: translateY(0); } 40% { transform: translateY(2px); } 100% { transform: translateY(0); } }
+@keyframes wxFlash { 0%,40%,100% { opacity: 1; } 20% { opacity: 0.4; } 22% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .wxicon { animation: none !important; }
+}
+
+/* ── chart legend (history) ─────────────────────────────────────────── */
+.chart-legend {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 11px; color: var(--ink-mute); margin-bottom: 6px; flex-wrap: wrap;
+}
+.chart-legend__dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 999px; margin-right: 4px;
+  vertical-align: middle;
+}
+.line-chart { width: 100%; height: auto; display: block; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+
+/* ── moon ───────────────────────────────────────────────────────────── */
+.moon-row { display: grid; grid-template-columns: 100px 1fr; gap: 14px; align-items: center; }
+.moon-svg { width: 100px; height: 100px; animation: wxBob 7s ease-in-out infinite; }
+.moon-meta { display: flex; flex-direction: column; gap: 6px; }
+.moon-stat { display: flex; justify-content: space-between; font-size: 12px; }
+.moon-stat__label { color: var(--ink-mute); }
+.moon-stat__value { color: var(--ink); font-variant-numeric: tabular-nums; }

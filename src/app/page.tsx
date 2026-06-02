@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   Search, Star, Wind, Droplets, Eye, Gauge,
   Sun, CalendarDays, Map as MapIcon, Bookmark,
-  MapPin, Share2, AlertTriangle, GitCompare, Keyboard,
+  MapPin, Share2, AlertTriangle, Keyboard,
 } from 'lucide-react';
 import { Tomato } from '@/components/Tomato';
 import { OutfitCard } from '@/components/OutfitCard';
@@ -21,11 +21,12 @@ import InstallPrompt from '@/components/InstallPrompt';
 import { WindCompass } from '@/components/WindCompass';
 import { HistoryCard } from '@/components/HistoryCard';
 import { LightningCard } from '@/components/LightningCard';
-import { CompareCard } from '@/components/CompareCard';
+import { MoonCard } from '@/components/MoonCard';
 import { ShortcutsOverlay } from '@/components/ShortcutsOverlay';
 import { useFavorites } from '@/lib/favorites';
 import { useUnits } from '@/lib/units';
-import { weatherIcon, weatherLabel } from '@/lib/weatherIcon';
+import { weatherLabel } from '@/lib/weatherIcon';
+import { AnimatedWeatherIcon } from '@/components/AnimatedWeatherIcon';
 import { buildShareText } from '@/lib/share';
 
 type LocState = { lat: number; lon: number; name: string; country: string; countryCode: string };
@@ -35,7 +36,6 @@ const TABS = [
   { id: 'forecast', label: 'forecast', icon: CalendarDays },
   { id: 'alerts',   label: 'alerts',   icon: AlertTriangle },
   { id: 'map',      label: 'map',      icon: MapIcon },
-  { id: 'compare',  label: 'compare',  icon: GitCompare },
   { id: 'saved',    label: 'saved',    icon: Bookmark },
 ] as const;
 type Tab = (typeof TABS)[number]['id'];
@@ -136,8 +136,7 @@ export default function Home() {
       else if (e.key === '2') setTab('forecast');
       else if (e.key === '3') setTab('alerts');
       else if (e.key === '4') setTab('map');
-      else if (e.key === '5') setTab('compare');
-      else if (e.key === '6') setTab('saved');
+      else if (e.key === '5') setTab('saved');
       else if (e.key === 'l' || e.key === 'L') locate();
       else if (e.key === 's' || e.key === 'S') share();
       else if (e.key === 'u' || e.key === 'U') setUnit(unit === 'metric' ? 'imperial' : 'metric');
@@ -202,7 +201,8 @@ export default function Home() {
   const c = weather?.current;
   const favId = `${loc.lat.toFixed(2)},${loc.lon.toFixed(2)}`;
   const isFav = fav?.isFav(favId);
-  const HeroIcon = c ? weatherIcon(c.weatherCode ?? 0, c.isDay !== false) : null;
+  const heroCode = c?.weatherCode ?? 0;
+  const heroIsDay = c?.isDay !== false;
   const tu = tempUnit.replace('°F', '°');
   const displayName = loc.name || `${loc.lat.toFixed(2)}°, ${loc.lon.toFixed(2)}°`;
   const alertCount = alerts?.count ?? 0;
@@ -302,9 +302,9 @@ export default function Home() {
                   {weatherLabel(c.weatherCode ?? 0)} · feels {Math.round(temp(c.feelsLikeC))}{tu}
                 </div>
               </div>
-              {HeroIcon && (
+              {c && (
                 <div className="current-icon">
-                  <HeroIcon size={56} strokeWidth={1.4} />
+                  <AnimatedWeatherIcon code={heroCode} isDay={heroIsDay} size={56} />
                 </div>
               )}
             </div>
@@ -335,6 +335,7 @@ export default function Home() {
           <PollenCard lat={loc.lat} lon={loc.lon} />
           <LightningCard lat={loc.lat} lon={loc.lon} />
           <HistoryCard lat={loc.lat} lon={loc.lon} />
+          <MoonCard />
           <SunCard weather={weather} />
         </>
       )}
@@ -354,10 +355,6 @@ export default function Home() {
         <div className="map-wrap">
           <WeatherMap lat={loc.lat} lon={loc.lon} />
         </div>
-      )}
-
-      {tab === 'compare' && (
-        <CompareCard baseCity={{ id: favId, name: displayName, country: loc.country, lat: loc.lat, lon: loc.lon }} />
       )}
 
       {tab === 'saved' && (
