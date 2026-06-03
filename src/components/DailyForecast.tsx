@@ -40,7 +40,7 @@ export function DailyForecast({ weather, lat, lon }: Props) {
 
   const sparkPoints = useMemo(() => {
     if (!d?.time?.length) return [];
-    const sparkW = 280, sparkH = 60, pad = 4;
+    const sparkW = 560, sparkH = 80, pad = 8;
     return d.time.map((_t: string, i: number) => {
       const mid = (d.temperature_2m_min[i] + d.temperature_2m_max[i]) / 2;
       const x = pad + (i / Math.max(1, d.time.length - 1)) * (sparkW - pad * 2);
@@ -54,7 +54,7 @@ export function DailyForecast({ weather, lat, lon }: Props) {
 
   if (!d?.time?.length) return null;
 
-  const sparkW = 280, sparkH = 60;
+  const sparkW = 560, sparkH = 80;
   const weekHiIdx = d.temperature_2m_max.indexOf(weekHi);
   const weekLoIdx = d.temperature_2m_min.indexOf(weekLo);
   const wettestPop = d.precipitation_probability_max ? Math.max(...d.precipitation_probability_max) : 0;
@@ -82,7 +82,7 @@ export function DailyForecast({ weather, lat, lon }: Props) {
 
       {/* Week temperature sparkline */}
       <div className="fc-spark">
-        <svg viewBox={`0 0 ${sparkW} ${sparkH}`} preserveAspectRatio="none" width="100%" height={sparkH}>
+        <svg viewBox={`0 0 ${sparkW} ${sparkH}`} preserveAspectRatio="xMidYMid meet" width="100%" height={sparkH} style={{ display: 'block', minHeight: sparkH }}>
           <defs>
             <linearGradient id="fc-spark-fill" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#9d7cd8" stopOpacity={0.35} />

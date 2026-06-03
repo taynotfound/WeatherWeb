@@ -469,6 +469,14 @@ export default function Home() {
       )}
       <InstallPrompt />
       <Tomato weather={weather} />
+
+      <footer className="app-footer">
+        <span>Made with 🍅 by <a href="https://taymaerz.de" target="_blank" rel="noopener noreferrer">Tay</a></span>
+        <span className="app-footer__sep">·</span>
+        <a href="https://taymaerz.de/impressum" target="_blank" rel="noopener noreferrer">Impressum</a>
+        <span className="app-footer__sep">·</span>
+        <span>Data: Open-Meteo</span>
+      </footer>
     </main>
   );
 }
