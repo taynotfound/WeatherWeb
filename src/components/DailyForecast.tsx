@@ -5,7 +5,7 @@ import { weatherLabel } from '@/lib/weatherIcon';
 import { AnimatedWeatherIcon } from './AnimatedWeatherIcon';
 import { useUnits } from '@/lib/units';
 import { ConfidenceBadge } from './ConfidenceBadge';
-import { Droplets, Wind, Sun, ThermometerSun, ThermometerSnowflake, CloudRain } from 'lucide-react';
+import { Droplets, Wind, Sun, ThermometerSun, ThermometerSnowflake, CloudRain, ChevronDown } from 'lucide-react';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -13,7 +13,6 @@ function fmtDate(d: Date) {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-/** Pick a short, opinionated headline for a day. */
 function dayVerdict(t: { max: number; min: number; pop: number; code: number; wind: number; uv: number }) {
   if (t.pop >= 70) return { tone: 'wet', label: 'Wet & moody' };
   if (t.pop >= 40) return { tone: 'wet', label: 'Showery patches' };
@@ -26,75 +25,81 @@ function dayVerdict(t: { max: number; min: number; pop: number; code: number; wi
   return { tone: 'mild', label: 'Mild & uneventful' };
 }
 
-export function DailyForecast({ weather, lat, lon }: { weather: any; lat?: number; lon?: number }) {
+type Props = { weather: any; lat?: number; lon?: number };
+
+export function DailyForecast({ weather, lat, lon }: Props) {
   const { temp, tempUnit, speed, speedUnit } = useUnits();
-  const d = weather?.daily;
   const [openIdx, setOpenIdx] = useState<number | null>(0);
 
-  if (!d?.time?.length) return null;
-
-  const allMin = Math.min(...d.temperature_2m_min);
-  const allMax = Math.max(...d.temperature_2m_max);
+  // ⚠️ All hooks must run before any conditional return
+  const d = weather?.daily;
+  const allMin = useMemo(() => (d?.temperature_2m_min?.length ? Math.min(...d.temperature_2m_min) : 0), [d]);
+  const allMax = useMemo(() => (d?.temperature_2m_max?.length ? Math.max(...d.temperature_2m_max) : 1), [d]);
   const span = Math.max(1, allMax - allMin);
   const tu = tempUnit.replace('°F', '°');
 
-  // Build sparkline for week temps
-  const sparkW = 280, sparkH = 60, pad = 4;
   const sparkPoints = useMemo(() => {
+    if (!d?.time?.length) return [];
+    const sparkW = 280, sparkH = 60, pad = 4;
     return d.time.map((_t: string, i: number) => {
       const mid = (d.temperature_2m_min[i] + d.temperature_2m_max[i]) / 2;
-      const x = pad + (i / (d.time.length - 1)) * (sparkW - pad * 2);
+      const x = pad + (i / Math.max(1, d.time.length - 1)) * (sparkW - pad * 2);
       const y = pad + (1 - (mid - allMin) / span) * (sparkH - pad * 2);
-      return [x, y] as const;
+      return [x, y] as [number, number];
     });
   }, [d, allMin, span]);
 
-  const sparkPath = sparkPoints.map((p: readonly [number, number], i: number) => `${i === 0 ? 'M' : 'L'}${p[0]},${p[1]}`).join(' ');
-  const sparkArea = `${sparkPath} L${sparkPoints[sparkPoints.length - 1][0]},${sparkH} L${sparkPoints[0][0]},${sparkH} Z`;
+  const weekHi = useMemo(() => (d?.temperature_2m_max?.length ? Math.max(...d.temperature_2m_max) : 0), [d]);
+  const weekLo = useMemo(() => (d?.temperature_2m_min?.length ? Math.min(...d.temperature_2m_min) : 0), [d]);
 
-  const weekHi = Math.max(...d.temperature_2m_max);
-  const weekLo = Math.min(...d.temperature_2m_min);
+  if (!d?.time?.length) return null;
+
+  const sparkW = 280, sparkH = 60;
   const weekHiIdx = d.temperature_2m_max.indexOf(weekHi);
   const weekLoIdx = d.temperature_2m_min.indexOf(weekLo);
-  const wettest = d.precipitation_probability_max
-    ? d.precipitation_probability_max.indexOf(Math.max(...d.precipitation_probability_max))
-    : -1;
+  const wettestPop = d.precipitation_probability_max ? Math.max(...d.precipitation_probability_max) : 0;
+  const wettest = d.precipitation_probability_max ? d.precipitation_probability_max.indexOf(wettestPop) : -1;
+
+  const sparkPath = sparkPoints.map((p: [number, number], i: number) => `${i === 0 ? 'M' : 'L'}${p[0]},${p[1]}`).join(' ');
+  const sparkArea = sparkPoints.length > 0
+    ? `${sparkPath} L${sparkPoints[sparkPoints.length - 1][0]},${sparkH} L${sparkPoints[0][0]},${sparkH} Z`
+    : '';
 
   return (
-    <section className="card forecast-card">
-      <div className="card-head forecast-head">
+    <section className="card fc-card">
+      <div className="card-head fc-head">
         <h2>7-day outlook</h2>
-        <div className="forecast-meta">
-          <span className="forecast-meta__chip"><ThermometerSun size={12} /> hi {Math.round(temp(weekHi))}{tu}</span>
-          <span className="forecast-meta__chip"><ThermometerSnowflake size={12} /> lo {Math.round(temp(weekLo))}{tu}</span>
-          {wettest >= 0 && d.precipitation_probability_max[wettest] >= 30 && (
-            <span className="forecast-meta__chip forecast-meta__chip--wet">
+        <div className="fc-meta">
+          <span className="fc-chip"><ThermometerSun size={12} /> hi {Math.round(temp(weekHi))}{tu}</span>
+          <span className="fc-chip"><ThermometerSnowflake size={12} /> lo {Math.round(temp(weekLo))}{tu}</span>
+          {wettest >= 0 && wettestPop >= 30 && (
+            <span className="fc-chip fc-chip--wet">
               <CloudRain size={12} /> wettest {DAYS[new Date(d.time[wettest]).getDay()]}
             </span>
           )}
         </div>
       </div>
 
-      {/* Week sparkline */}
-      <div className="forecast-spark">
-        <svg viewBox={`0 0 ${sparkW} ${sparkH}`} preserveAspectRatio="none" style={{ width: '100%', height: sparkH }}>
+      {/* Week temperature sparkline */}
+      <div className="fc-spark">
+        <svg viewBox={`0 0 ${sparkW} ${sparkH}`} preserveAspectRatio="none" width="100%" height={sparkH}>
           <defs>
-            <linearGradient id="spark-fill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#9d7cd8" stopOpacity={0.4} />
+            <linearGradient id="fc-spark-fill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#9d7cd8" stopOpacity={0.35} />
               <stop offset="100%" stopColor="#9d7cd8" stopOpacity={0} />
             </linearGradient>
           </defs>
-          <path d={sparkArea} fill="url(#spark-fill)" />
-          <path d={sparkPath} fill="none" stroke="#9d7cd8" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-          {sparkPoints.map((p: readonly [number, number], i: number) => {
+          {sparkArea && <path d={sparkArea} fill="url(#fc-spark-fill)" />}
+          {sparkPath && <path d={sparkPath} fill="none" stroke="#9d7cd8" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />}
+          {sparkPoints.map((p: [number, number], i: number) => {
             const isHi = i === weekHiIdx;
             const isLo = i === weekLoIdx;
             return (
               <g key={i}>
                 <circle cx={p[0]} cy={p[1]} r={isHi || isLo ? 3.5 : 2} fill={isHi ? '#ff9e64' : isLo ? '#7aa2f7' : '#9d7cd8'} />
                 {(isHi || isLo) && (
-                  <text x={p[0]} y={p[1] - 6} textAnchor="middle" fontSize={9} fill={isHi ? '#ff9e64' : '#7aa2f7'} fontFamily="ui-monospace, monospace">
-                    {Math.round(temp(isHi ? weekHi : weekLo))}°
+                  <text x={p[0]} y={p[1] - 7} textAnchor="middle" fontSize={9} fill={isHi ? '#ff9e64' : '#7aa2f7'} fontFamily="ui-monospace,monospace" fontWeight={700}>
+                    {Math.round(temp(isHi ? weekHi : weekLo))}{tu}
                   </text>
                 )}
               </g>
@@ -103,15 +108,15 @@ export function DailyForecast({ weather, lat, lon }: { weather: any; lat?: numbe
         </svg>
       </div>
 
-      <div className="daily daily--rich">
+      <div className="fc-days">
         {d.time.map((t: string, i: number) => {
           const date = new Date(t);
           const dayName = i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : DAYS[date.getDay()];
           const min = d.temperature_2m_min[i];
           const max = d.temperature_2m_max[i];
           const code = d.weather_code?.[i] ?? 0;
-          const left = ((min - allMin) / span) * 100;
-          const width = ((max - min) / span) * 100;
+          const barLeft = ((min - allMin) / span) * 100;
+          const barWidth = Math.max(4, ((max - min) / span) * 100);
           const pop = d.precipitation_probability_max?.[i] ?? 0;
           const precip = d.precipitation_sum?.[i] ?? 0;
           const wind = d.wind_speed_10m_max?.[i] ?? 0;
@@ -123,69 +128,88 @@ export function DailyForecast({ weather, lat, lon }: { weather: any; lat?: numbe
           const isOpen = openIdx === i;
 
           return (
-            <div key={t} className={`daily-row daily-row--rich ${isOpen ? 'is-open' : ''}`}>
+            <div key={t} className={`fc-row ${isOpen ? 'fc-row--open' : ''}`}>
               <button
-                className="daily-row__head"
+                className="fc-row__trigger"
                 onClick={() => setOpenIdx(isOpen ? null : i)}
                 aria-expanded={isOpen}
               >
-                <div className="daily-day">
-                  <span className="daily-day__name">{dayName}</span>
-                  <span className="daily-day__date">{fmtDate(date)}</span>
-                  {lat != null && lon != null && <ConfidenceBadge lat={lat} lon={lon} date={t} />}
-                </div>
-                <div className="daily-icon"><AnimatedWeatherIcon code={code} isDay={true} size={22} /></div>
-                <div className="daily-mid">
-                  <span className={`daily-verdict daily-verdict--${verdict.tone}`}>{verdict.label}</span>
-                  {pop >= 30 && (
-                    <span className="daily-pop"><Droplets size={11} /> {Math.round(pop)}%</span>
+                {/* Day name + date */}
+                <div className="fc-day">
+                  <span className="fc-day__name">{dayName}</span>
+                  <span className="fc-day__date">{fmtDate(date)}</span>
+                  {lat != null && lon != null && (
+                    <span className="fc-conf"><ConfidenceBadge lat={lat} lon={lon} date={t} /></span>
                   )}
                 </div>
-                <div className="daily-bar daily-bar--rich">
-                  <span style={{ left: `${left}%`, width: `${Math.max(4, width)}%` }} />
+
+                {/* Weather icon */}
+                <div className="fc-icon">
+                  <AnimatedWeatherIcon code={code} isDay={true} size={24} />
                 </div>
-                <div className="daily-temps">
-                  <span className="lo">{Math.round(temp(min))}{tu}</span>
-                  <span className="hi">{Math.round(temp(max))}{tu}</span>
+
+                {/* Verdict chip + rain */}
+                <div className="fc-verdict-wrap">
+                  <span className={`fc-verdict fc-verdict--${verdict.tone}`}>{verdict.label}</span>
+                  {pop >= 25 && (
+                    <span className="fc-pop"><Droplets size={10} />{Math.round(pop)}%</span>
+                  )}
                 </div>
+
+                {/* Temp range bar */}
+                <div className="fc-bar-wrap">
+                  <div className="fc-bar">
+                    <span style={{ left: `${barLeft}%`, width: `${barWidth}%` }} />
+                  </div>
+                </div>
+
+                {/* Lo / Hi */}
+                <div className="fc-temps">
+                  <span className="fc-lo">{Math.round(temp(min))}{tu}</span>
+                  <span className="fc-hi">{Math.round(temp(max))}{tu}</span>
+                </div>
+
+                <ChevronDown size={14} className={`fc-chevron ${isOpen ? 'fc-chevron--open' : ''}`} />
               </button>
 
               {isOpen && (
-                <div className="daily-row__body">
-                  <div className="daily-detail">
-                    <span className="daily-detail__label">Condition</span>
-                    <span className="daily-detail__val">{weatherLabel(code)}</span>
-                  </div>
-                  <div className="daily-detail">
-                    <span className="daily-detail__label">Rain chance</span>
-                    <span className="daily-detail__val">{Math.round(pop)}% · {precip.toFixed(1)} mm</span>
-                  </div>
-                  <div className="daily-detail">
-                    <span className="daily-detail__label">Wind</span>
-                    <span className="daily-detail__val">
-                      <Wind size={11} /> {Math.round(speed(wind))} {speedUnit}
-                      {gusts > 0 && <span className="daily-detail__sub"> · gusts {Math.round(speed(gusts))}</span>}
-                    </span>
-                  </div>
-                  <div className="daily-detail">
-                    <span className="daily-detail__label">UV</span>
-                    <span className="daily-detail__val">
-                      <Sun size={11} /> {uv.toFixed(1)}
-                      <span className="daily-detail__sub">
-                        {uv < 3 ? ' · low' : uv < 6 ? ' · moderate' : uv < 8 ? ' · high' : uv < 11 ? ' · very high' : ' · extreme'}
-                      </span>
-                    </span>
-                  </div>
-                  {sunrise && sunset && (
-                    <div className="daily-detail daily-detail--wide">
-                      <span className="daily-detail__label">Sun</span>
-                      <span className="daily-detail__val">
-                        ↑ {new Date(sunrise).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
-                        {' · '}
-                        ↓ {new Date(sunset).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                <div className="fc-row__detail">
+                  <div className="fc-detail-grid">
+                    <div className="fc-detail-item">
+                      <span className="fc-dl">Condition</span>
+                      <span className="fc-dv">{weatherLabel(code)}</span>
+                    </div>
+                    <div className="fc-detail-item">
+                      <span className="fc-dl">Rain chance</span>
+                      <span className="fc-dv">{Math.round(pop)}% · {precip.toFixed(1)} mm</span>
+                    </div>
+                    <div className="fc-detail-item">
+                      <span className="fc-dl">Wind</span>
+                      <span className="fc-dv">
+                        <Wind size={11} /> {Math.round(speed(wind))} {speedUnit}
+                        {gusts > 0 && <span className="fc-dsub"> gusts {Math.round(speed(gusts))}</span>}
                       </span>
                     </div>
-                  )}
+                    <div className="fc-detail-item">
+                      <span className="fc-dl">UV index</span>
+                      <span className="fc-dv">
+                        <Sun size={11} /> {uv.toFixed(1)}
+                        <span className="fc-dsub">
+                          {uv < 3 ? ' low' : uv < 6 ? ' moderate' : uv < 8 ? ' high' : uv < 11 ? ' very high' : ' extreme'}
+                        </span>
+                      </span>
+                    </div>
+                    {sunrise && sunset && (
+                      <div className="fc-detail-item fc-detail-item--wide">
+                        <span className="fc-dl">Sun</span>
+                        <span className="fc-dv">
+                          ↑ {new Date(sunrise).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                          {' · '}
+                          ↓ {new Date(sunset).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
