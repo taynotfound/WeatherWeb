@@ -3,10 +3,11 @@
 import { weatherLabel } from '@/lib/weatherIcon';
 import { AnimatedWeatherIcon } from './AnimatedWeatherIcon';
 import { useUnits } from '@/lib/units';
+import { ConfidenceBadge } from './ConfidenceBadge';
 
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
-export function DailyForecast({ weather }: { weather: any }) {
+export function DailyForecast({ weather, lat, lon }: { weather: any; lat?: number; lon?: number }) {
   const { temp, tempUnit } = useUnits();
   const d = weather?.daily;
   if (!d?.time?.length) return null;
@@ -32,7 +33,10 @@ export function DailyForecast({ weather }: { weather: any }) {
           return (
             <div key={t} className="daily-row" title={weatherLabel(code)}>
               <div className="daily-day">
-                {dayName}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span>{dayName}</span>
+                  {lat != null && lon != null && <ConfidenceBadge lat={lat} lon={lon} date={t} />}
+                </div>
                 {pop >= 30 && (
                   <span style={{ display: 'block', fontSize: 10, color: 'var(--secondary)', fontVariantNumeric: 'tabular-nums' }}>
                     {Math.round(pop)}%

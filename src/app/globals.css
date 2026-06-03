@@ -1614,3 +1614,52 @@ button { cursor: pointer; }
 }
 .risk-badge--warn { color: #ff9e64; border-color: rgba(255,158,100,.30); background: rgba(255,158,100,.06); }
 .risk-badge--severe { color: #f7768e; border-color: rgba(247,118,142,.35); background: rgba(247,118,142,.08); }
+
+/* ─── Settings pane ─────────────────────────────────────────── */
+.settings-overlay{position:fixed;inset:0;background:rgba(10,8,16,.7);backdrop-filter:blur(4px);
+  display:flex;justify-content:center;align-items:flex-start;padding:48px 16px;z-index:1000;
+  animation:fadeIn .15s ease-out;}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.settings-pane{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  width:100%;max-width:480px;max-height:calc(100vh - 96px);overflow-y:auto;
+  box-shadow:0 8px 32px rgba(0,0,0,.4);}
+.settings-head{display:flex;justify-content:space-between;align-items:center;
+  padding:16px 20px;border-bottom:1px solid var(--border);}
+.settings-head h2{margin:0;font-size:16px;font-weight:600;color:var(--text);}
+.settings-section{padding:16px 20px;border-bottom:1px solid var(--border);}
+.settings-section:last-child{border-bottom:none;}
+.settings-label{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--secondary);margin-bottom:10px;}
+.settings-hint{font-size:12px;color:var(--secondary);margin-bottom:10px;line-height:1.5;}
+.settings-hint a{color:var(--primary);text-decoration:none;}
+.settings-hint a:hover{text-decoration:underline;}
+
+/* ─── Hourly compact + best-hour marker ─────────────────────── */
+.hourly-head{display:flex;justify-content:space-between;align-items:center;width:100%;}
+.hourly-toggle{font-size:11px;color:var(--secondary);background:transparent;border:1px solid var(--border);
+  border-radius:8px;padding:4px 10px;cursor:pointer;transition:all .15s;}
+.hourly-toggle:hover{color:var(--text);border-color:var(--primary);}
+.hour--best{position:relative;background:rgba(157,124,216,.08);border-radius:8px;}
+.hour--best::before{content:'★';position:absolute;top:-6px;left:50%;transform:translateX(-50%);
+  font-size:10px;color:var(--primary);background:var(--surface);padding:0 4px;border-radius:4px;}
+
+/* ─── Confidence badge ──────────────────────────────────────── */
+.conf-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:500;
+  padding:2px 6px;border-radius:6px;font-variant-numeric:tabular-nums;}
+.conf--high{background:rgba(122,162,247,.15);color:#7aa2f7;}
+.conf--med{background:rgba(255,158,100,.15);color:#ff9e64;}
+.conf--low{background:rgba(247,118,142,.15);color:#f7768e;}
+
+/* ─── Forecast change card ──────────────────────────────────── */
+.forecast-change{display:flex;flex-direction:column;gap:6px;}
+.fc-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;
+  border-bottom:1px dashed var(--border);font-size:13px;}
+.fc-row:last-child{border-bottom:none;}
+.fc-label{color:var(--secondary);font-size:12px;}
+.fc-vals{display:flex;align-items:center;gap:8px;font-variant-numeric:tabular-nums;}
+.fc-was{color:var(--secondary);text-decoration:line-through;font-size:12px;}
+.fc-now{color:var(--text);font-weight:500;}
+.fc-delta{font-size:11px;padding:2px 6px;border-radius:4px;font-weight:500;}
+.fc-delta--up{background:rgba(255,158,100,.15);color:#ff9e64;}
+.fc-delta--down{background:rgba(122,162,247,.15);color:#7aa2f7;}
+.fc-delta--same{background:rgba(157,124,216,.1);color:var(--secondary);}

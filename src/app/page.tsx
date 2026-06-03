@@ -36,9 +36,12 @@ import { HeroAnswerCard } from '@/components/HeroAnswerCard';
 import { UtilityScores } from '@/components/UtilityScores';
 import { InsightRow } from '@/components/InsightRow';
 import { ComparedToNormalCard } from '@/components/ComparedToNormalCard';
+import { ForecastChangeCard } from '@/components/ForecastChangeCard';
 import { NerdDrawer } from '@/components/NerdDrawer';
 import { RiskBadges } from '@/components/RiskBadges';
-import { AttitudeSlider, useAttitude } from '@/components/AttitudeSlider';
+import { useAttitude } from '@/components/AttitudeSlider';
+import { SettingsPane } from '@/components/SettingsPane';
+import { Settings } from 'lucide-react';
 import { rainArrival } from '@/lib/bestHour';
 
 type LocState = { lat: number; lon: number; name: string; country: string; countryCode: string };
@@ -71,6 +74,7 @@ export default function Home() {
   const fav = useFavorites();
   const { unit, setUnit, temp, tempUnit, speed, speedUnit } = useUnits();
   const [attitude, setAttitude] = useAttitude();
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
@@ -228,16 +232,8 @@ export default function Home() {
           <h1>Tomato</h1>
         </div>
         <div className="header-actions">
-          <div className="unit-toggle" role="group" aria-label="Units">
-            <button className={unit === 'metric' ? 'is-active' : ''} onClick={() => setUnit('metric')}>°C</button>
-            <button className={unit === 'imperial' ? 'is-active' : ''} onClick={() => setUnit('imperial')}>°F</button>
-          </div>
-          <button
-            className="btn-icon"
-            aria-label="Use my location"
-            onClick={locate}
-            style={locating ? { color: 'var(--primary)' } : undefined}
-          >
+          <button className="btn-icon" aria-label="Use my location" onClick={locate}
+            style={locating ? { color: 'var(--primary)' } : undefined}>
             <MapPin size={18} />
           </button>
           <button className="btn-icon" aria-label="Share location" onClick={share}>
@@ -245,6 +241,9 @@ export default function Home() {
           </button>
           <button className="btn-icon" aria-label="Keyboard shortcuts" onClick={() => setShowShortcuts(true)}>
             <Keyboard size={18} />
+          </button>
+          <button className="btn-icon" aria-label="Settings" onClick={() => setShowSettings(true)}>
+            <Settings size={18} />
           </button>
           {weather && fav && (
             <button
@@ -324,7 +323,6 @@ export default function Home() {
             {/* Attitude + risks: lightweight controls, only show risks if present */}
             <div className="row" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
               <RiskBadges current={c} weatherCode={c.weatherCode} />
-              <AttitudeSlider value={attitude} onChange={setAttitude} />
             </div>
 
             {/* Utility scores — 4 chips, the "should I?" answers */}
@@ -342,6 +340,9 @@ export default function Home() {
                 todayPrecipMm={todayPrecipMm}
               />
             )}
+
+            {/* What changed since yesterday's forecast */}
+            <ForecastChangeCard lat={loc.lat} lon={loc.lon} />
 
             {/* Alerts only if present (no equal-weight padding) */}
             {alertCount > 0 && <AlertsCard lat={loc.lat} lon={loc.lon} country={loc.countryCode} />}
@@ -364,7 +365,7 @@ export default function Home() {
       {weather && tab === 'forecast' && (
         <>
           <HourlyStrip weather={weather} />
-          <DailyForecast weather={weather} />
+          <DailyForecast weather={weather} lat={loc.lat} lon={loc.lon} />
         </>
       )}
 
@@ -427,6 +428,7 @@ export default function Home() {
 
       {toast && <div className="toast">{toast}</div>}
       {showShortcuts && <ShortcutsOverlay onClose={() => setShowShortcuts(false)} />}
+      <SettingsPane open={showSettings} onClose={() => setShowSettings(false)} />
       {showShare && (
         <ShareModal
           title={shareData.title}
