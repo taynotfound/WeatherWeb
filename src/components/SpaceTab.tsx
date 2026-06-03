@@ -194,48 +194,38 @@ function MoonSvg({ phase, size = 60 }: { phase: number; size?: number }) {
   );
 }
 
-// ─── ISS Mini Map ─────────────────────────────────────────────────────────────
-function IssMap({ issLat, issLon, userLat, userLon }: { issLat: number; issLon: number; userLat: number; userLon: number }) {
-  const W = 540, H = 270;
-  const toX = (lon: number) => ((lon + 180) / 360) * W;
-  const toY = (lat: number) => ((90 - lat) / 180) * H;
+// ─── ISS Map (real world map) ────────────────────────────────────────────────
+import { WorldMap } from './WorldMap';
 
-  const ix = toX(issLon), iy = toY(issLat);
-  const ux = toX(userLon), uy = toY(userLat);
-
+function IssMap({
+  issLat,
+  issLon,
+  userLat,
+  userLon,
+  trail,
+}: {
+  issLat: number;
+  issLon: number;
+  userLat: number;
+  userLon: number;
+  trail: Array<{ lat: number; lon: number }>;
+}) {
   return (
-    <svg
-      viewBox={`0 0 ${W} ${H}`}
-      style={{ width: '100%', borderRadius: 8, background: '#0d0c14', border: '1px solid rgba(157,124,216,0.2)' }}
-    >
-      {/* Simple equirectangular grid */}
-      {[-60,-30,0,30,60].map(lat => (
-        <line key={lat} x1={0} y1={toY(lat)} x2={W} y2={toY(lat)} stroke="rgba(157,124,216,0.1)" strokeWidth={1} />
-      ))}
-      {[-120,-60,0,60,120].map(lon => (
-        <line key={lon} x1={toX(lon)} y1={0} x2={toX(lon)} y2={H} stroke="rgba(157,124,216,0.1)" strokeWidth={1} />
-      ))}
-      {/* Equator highlight */}
-      <line x1={0} y1={toY(0)} x2={W} y2={toY(0)} stroke="rgba(157,124,216,0.25)" strokeWidth={1} strokeDasharray="4 4" />
-
-      {/* ISS orbit band ±51.6° */}
-      <rect x={0} y={toY(51.6)} width={W} height={toY(-51.6) - toY(51.6)} fill="rgba(157,124,216,0.04)" />
-
-      {/* User location */}
-      <circle cx={ux} cy={uy} r={5} fill="#7aa2f7" opacity={0.9} />
-      <circle cx={ux} cy={uy} r={10} fill="none" stroke="#7aa2f7" strokeWidth={1} opacity={0.4} />
-
-      {/* ISS */}
-      <circle cx={ix} cy={iy} r={6} fill="#73daca" />
-      <circle cx={ix} cy={iy} r={12} fill="none" stroke="#73daca" strokeWidth={1.5} opacity={0.5}>
-        <animate attributeName="r" values="8;16;8" dur="2s" repeatCount="indefinite" />
-        <animate attributeName="opacity" values="0.5;0;0.5" dur="2s" repeatCount="indefinite" />
-      </circle>
-      <text x={ix + 9} y={iy - 6} fill="#73daca" fontSize={10} fontFamily="monospace">ISS</text>
-
-      {/* Labels */}
-      <text x={4} y={H-4} fill="rgba(157,124,216,0.5)" fontSize={9} fontFamily="monospace">🟦 you  🟢 ISS</text>
-    </svg>
+    <div className="iss-map-wrap">
+      <WorldMap
+        width={720}
+        height={360}
+        user={{ lat: userLat, lon: userLon, label: 'YOU' }}
+        iss={{ lat: issLat, lon: issLon, label: 'ISS' }}
+        issTrail={trail}
+        showTerminator
+      />
+      <div className="iss-map-legend">
+        <span><span className="dot dot--you" /> you</span>
+        <span><span className="dot dot--iss" /> ISS</span>
+        <span><span className="dot dot--night" /> night</span>
+      </div>
+    </div>
   );
 }
 
@@ -288,7 +278,7 @@ export function SpaceTab({ lat, lon }: { lat: number; lon: number }) {
           <div className="space-skeleton-block" />
         ) : (
           <>
-            <IssMap issLat={iss.lat} issLon={iss.lon} userLat={lat} userLon={lon} />
+            <IssMap issLat={iss.lat} issLon={iss.lon} userLat={lat} userLon={lon} trail={issHistory} />
             <div className="iss-stats">
               <div className="iss-stat">
                 <span className="iss-stat__label">Coordinates</span>

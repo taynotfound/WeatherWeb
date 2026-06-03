@@ -44,6 +44,9 @@ import { useAttitude } from '@/components/AttitudeSlider';
 import { SettingsPane } from '@/components/SettingsPane';
 import { Settings } from 'lucide-react';
 import { rainArrival } from '@/lib/bestHour';
+import { WeekSummary } from '@/components/WeekSummary';
+import { HourlyHeatmap } from '@/components/HourlyHeatmap';
+import { AlertsTab } from '@/components/AlertsTab';
 
 type LocState = { lat: number; lon: number; name: string; country: string; countryCode: string };
 const DEFAULT: LocState = { lat: 51.5074, lon: -0.1278, name: 'London', country: 'United Kingdom', countryCode: 'GB' };
@@ -368,13 +371,20 @@ export default function Home() {
 
       {weather && tab === 'forecast' && (
         <>
-          <HourlyStrip weather={weather} />
+          <WeekSummary weather={weather} />
+          <HourlyHeatmap weather={weather} />
           <DailyForecast weather={weather} lat={loc.lat} lon={loc.lon} />
         </>
       )}
 
       {tab === 'alerts' && (
-        <AlertsCard lat={loc.lat} lon={loc.lon} country={loc.countryCode} />
+        <AlertsTab
+          lat={loc.lat}
+          lon={loc.lon}
+          country={loc.countryCode}
+          weather={weather}
+          alertCount={alertCount}
+        />
       )}
 
       {tab === 'map' && (

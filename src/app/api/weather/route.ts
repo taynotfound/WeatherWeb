@@ -78,7 +78,7 @@ async function fetchOpenMeteo(lat: number, lon: number) {
   const url = `${OM_URL}?latitude=${lat}&longitude=${lon}` +
     `&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m,uv_index` +
     `&hourly=temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,wind_speed_10m,relative_humidity_2m,uv_index` +
-    `&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,precipitation_sum,precipitation_probability_max,sunrise,sunset,uv_index_max,wind_speed_10m_max` +
+    `&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,precipitation_sum,precipitation_probability_max,sunrise,sunset,uv_index_max,wind_speed_10m_max,wind_gusts_10m_max` +
     `&minutely_15=precipitation,precipitation_probability` +
     `&timezone=auto&forecast_days=7&past_days=0`;
   const r = await fetch(url, { next: { revalidate: 300 } });
