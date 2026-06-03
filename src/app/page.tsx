@@ -32,6 +32,14 @@ import { SpaceTab } from '@/components/SpaceTab';
 import { FeelsSparkline } from '@/components/FeelsSparkline';
 import { buildShareText } from '@/lib/share';
 import { useAutoTint } from '@/lib/autoTint';
+import { HeroAnswerCard } from '@/components/HeroAnswerCard';
+import { UtilityScores } from '@/components/UtilityScores';
+import { InsightRow } from '@/components/InsightRow';
+import { ComparedToNormalCard } from '@/components/ComparedToNormalCard';
+import { NerdDrawer } from '@/components/NerdDrawer';
+import { RiskBadges } from '@/components/RiskBadges';
+import { AttitudeSlider, useAttitude } from '@/components/AttitudeSlider';
+import { rainArrival } from '@/lib/bestHour';
 
 type LocState = { lat: number; lon: number; name: string; country: string; countryCode: string };
 const DEFAULT: LocState = { lat: 51.5074, lon: -0.1278, name: 'London', country: 'United Kingdom', countryCode: 'GB' };
@@ -62,6 +70,7 @@ export default function Home() {
   const searchRef = useRef<HTMLInputElement>(null);
   const fav = useFavorites();
   const { unit, setUnit, temp, tempUnit, speed, speedUnit } = useUnits();
+  const [attitude, setAttitude] = useAttitude();
 
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
@@ -294,55 +303,63 @@ export default function Home() {
       {err && <div className="card"><p>{err}</p></div>}
       {loading && !weather && <div className="card"><p className="empty">Loading…</p></div>}
 
-      {weather && c && tab === 'today' && (
-        <>
-          <section className="card">
-            <p className="current-place">{displayName}{loc.country ? `, ${loc.country}` : ''}</p>
-            <div className="current">
-              <div>
-                <div className="current-temp">{Math.round(temp(c.temperatureC))}{tu}</div>
-                <div className="current-meta">
-                  {weatherLabel(c.weatherCode ?? 0)} · feels {Math.round(temp(c.feelsLikeC))}{tu}
-                </div>
-                <FeelsSparkline weather={weather} temp={temp} />
-              </div>
-              {c && (
-                <div className="current-icon">
-                  <AnimatedWeatherIcon code={heroCode} isDay={heroIsDay} size={56} />
-                </div>
-              )}
+      {weather && c && tab === 'today' && (() => {
+        const rain = rainArrival(weather.minutely_15);
+        const rainSoonMin = rain ? rain.minutes : null;
+        const rainingNow = !!rain?.rainingNow;
+        const todayMaxC = weather?.daily?.temperature_2m_max?.[0] ?? null;
+        const todayPrecipMm = weather?.daily?.precipitation_sum?.[0] ?? null;
+        return (
+          <>
+            {/* Hero — the one card that answers "what's it doing?" in 2s */}
+            <HeroAnswerCard
+              current={c}
+              hourly={weather.hourly}
+              rainSoonMin={rainSoonMin}
+              rainingNow={rainingNow}
+              locationName={`${displayName}${loc.country ? `, ${loc.country}` : ''}`}
+              attitude={attitude}
+            />
+
+            {/* Attitude + risks: lightweight controls, only show risks if present */}
+            <div className="row" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+              <RiskBadges current={c} weatherCode={c.weatherCode} />
+              <AttitudeSlider value={attitude} onChange={setAttitude} />
             </div>
 
-            <div className="stats">
-              <span className="stat"><Wind size={14} />{Math.round(speed(c.windKmh))} {speedUnit}</span>
-              <span className="stat"><Droplets size={14} />{Math.round(c.humidity)}%</span>
-              {c.pressure && <span className="stat"><Gauge size={14} />{Math.round(c.pressure)} hPa</span>}
-              {c.uvIndex != null && <span className="stat"><Sun size={14} />UV {Math.round(c.uvIndex)}</span>}
-              {c.visibility != null && <span className="stat"><Eye size={14} />{Math.round((c.visibility ?? 0) / 1000)} km</span>}
-            </div>
+            {/* Utility scores — 4 chips, the "should I?" answers */}
+            <UtilityScores current={c} isDay={c.isDay !== false} />
 
-            {weather.sources && (
-              <div className="sources">
-                {weather.sources.used.map((s: string) => <span key={s} className="source-ok">{s}</span>)}
-                {weather.sources.failed.map((s: string) => <span key={s} className="source-bad">{s}</span>)}
-              </div>
+            {/* Decision insights: best hour + rain arrival */}
+            <InsightRow hourly={weather.hourly} minutely_15={weather.minutely_15} timezone={weather.timezone} />
+
+            {/* Today vs normal */}
+            {todayMaxC != null && (
+              <ComparedToNormalCard
+                lat={loc.lat}
+                lon={loc.lon}
+                todayMaxC={todayMaxC}
+                todayPrecipMm={todayPrecipMm}
+              />
             )}
-          </section>
 
-          {alertCount > 0 && <AlertsCard lat={loc.lat} lon={loc.lon} country={loc.countryCode} />}
-          <AIInsights weather={weather} alerts={alerts} air={air} />
-          <RainTimeline lat={loc.lat} lon={loc.lon} />
-          <OutfitCard weather={weather} />
-          <HourlyStrip weather={weather} />
-          <WindCompass weather={weather} />
-          <AirCard lat={loc.lat} lon={loc.lon} />
-          <PollenCard lat={loc.lat} lon={loc.lon} />
-          <LightningCard lat={loc.lat} lon={loc.lon} />
-          <HistoryCard lat={loc.lat} lon={loc.lon} />
-          <MoonCard />
-          <SunCard weather={weather} />
-        </>
-      )}
+            {/* Alerts only if present (no equal-weight padding) */}
+            {alertCount > 0 && <AlertsCard lat={loc.lat} lon={loc.lon} country={loc.countryCode} />}
+
+            {/* Short-term timeline */}
+            <RainTimeline lat={loc.lat} lon={loc.lon} />
+            <HourlyStrip weather={weather} />
+
+            {/* Supporting cards — demoted, but still here */}
+            <OutfitCard weather={weather} />
+            <AirCard lat={loc.lat} lon={loc.lon} />
+            <SunCard weather={weather} />
+
+            {/* Nerd drawer last — collapsed by default */}
+            <NerdDrawer current={c} sources={weather.sources} />
+          </>
+        );
+      })()}
 
       {weather && tab === 'forecast' && (
         <>
