@@ -33,6 +33,7 @@ import { FeelsSparkline } from '@/components/FeelsSparkline';
 import { buildShareText } from '@/lib/share';
 import { useAutoTint } from '@/lib/autoTint';
 import { HeroAnswerCard } from '@/components/HeroAnswerCard';
+import { TempCurveCard } from '@/components/TempCurveCard';
 import { UtilityScores } from '@/components/UtilityScores';
 import { InsightRow } from '@/components/InsightRow';
 import { ComparedToNormalCard } from '@/components/ComparedToNormalCard';
@@ -320,6 +321,9 @@ export default function Home() {
               attitude={attitude}
             />
 
+            {/* What to wear — primary selling point, lives directly under hero */}
+            <OutfitCard weather={weather} />
+
             {/* Attitude + risks: lightweight controls, only show risks if present */}
             <div className="row" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
               <RiskBadges current={c} weatherCode={c.weatherCode} />
@@ -349,10 +353,10 @@ export default function Home() {
 
             {/* Short-term timeline */}
             <RainTimeline lat={loc.lat} lon={loc.lon} />
+            <TempCurveCard weather={weather} />
             <HourlyStrip weather={weather} />
 
             {/* Supporting cards — demoted, but still here */}
-            <OutfitCard weather={weather} />
             <AirCard lat={loc.lat} lon={loc.lon} />
             <SunCard weather={weather} />
 
