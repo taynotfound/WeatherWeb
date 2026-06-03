@@ -14,7 +14,7 @@ export type DailyConfidence = {
   modelsUsed: number;
 };
 
-const MODELS = ['icon_seamless', 'gfs_seamless', 'ecmwf_ifs04', 'ukmo_seamless'];
+const MODELS = ['icon_seamless', 'gfs_seamless', 'ecmwf_ifs025', 'ukmo_seamless'];
 
 export async function fetchConfidence(lat: number, lon: number): Promise<DailyConfidence[] | null> {
   try {

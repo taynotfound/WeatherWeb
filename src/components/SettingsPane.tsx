@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Github, Heart } from 'lucide-react';
 import { useUnits } from '@/lib/units';
 import { AttitudeSlider, useAttitude } from './AttitudeSlider';
 
@@ -23,35 +23,38 @@ export function SettingsPane({ open, onClose }: { open: boolean; onClose: () => 
   if (!open) return null;
 
   return (
-    <div className="settings-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label="Settings">
-      <div className="settings-pane" onClick={e => e.stopPropagation()}>
-        <div className="settings-head">
-          <h2>Settings</h2>
+    <div className="share-modal-backdrop" onClick={onClose} role="dialog" aria-modal="true" aria-label="Settings">
+      <div className="share-modal" onClick={e => e.stopPropagation()}>
+        <div className="share-modal__head">
+          <span className="share-modal__title">Settings</span>
           <button className="btn-icon" onClick={onClose} aria-label="Close">
             <X size={18} />
           </button>
         </div>
 
-        <div className="settings-section">
-          <div className="settings-label">Units</div>
+        <div className="settings-block">
+          <div className="settings-block__label">Units</div>
           <div className="unit-toggle" role="group" aria-label="Units">
             <button className={unit === 'metric' ? 'is-active' : ''} onClick={() => setUnit('metric')}>°C · km/h</button>
             <button className={unit === 'imperial' ? 'is-active' : ''} onClick={() => setUnit('imperial')}>°F · mph</button>
           </div>
         </div>
 
-        <div className="settings-section">
-          <div className="settings-label">Attitude</div>
-          <div className="settings-hint">How sassy should the tomato be?</div>
+        <div className="settings-block">
+          <div className="settings-block__label">Attitude</div>
+          <div className="settings-block__hint">How sassy should the tomato be?</div>
           <AttitudeSlider value={attitude} onChange={setAttitude} />
         </div>
 
-        <div className="settings-section">
-          <div className="settings-label">About</div>
-          <div className="settings-hint">
-            Tomato — weather, with attitude.<br />
-            Data: Open-Meteo, Met.no, RainViewer, OpenWeatherMap.<br />
-            Built by <a href="https://taymaerz.de" target="_blank" rel="noopener noreferrer">Tay</a>.
+        <div className="settings-block settings-block--about">
+          <div className="settings-about">
+            <div className="settings-about__brand">🍅 Tomato Weather</div>
+            <div className="settings-about__tagline">weather, with attitude</div>
+            <div className="settings-about__line">Data: Open-Meteo · Met.no · RainViewer · OpenWeatherMap</div>
+            <div className="settings-about__line">
+              built with <Heart size={11} style={{ display: 'inline', verticalAlign: '-1px', color: '#ff9e64' }} /> by{' '}
+              <a href="https://taymaerz.de" target="_blank" rel="noopener noreferrer">Tay</a>
+            </div>
           </div>
         </div>
       </div>

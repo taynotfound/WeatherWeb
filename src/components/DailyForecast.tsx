@@ -33,14 +33,10 @@ export function DailyForecast({ weather, lat, lon }: { weather: any; lat?: numbe
           return (
             <div key={t} className="daily-row" title={weatherLabel(code)}>
               <div className="daily-day">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span>{dayName}</span>
-                  {lat != null && lon != null && <ConfidenceBadge lat={lat} lon={lon} date={t} />}
-                </div>
+                <span className="daily-day__name">{dayName}</span>
+                {lat != null && lon != null && <ConfidenceBadge lat={lat} lon={lon} date={t} />}
                 {pop >= 30 && (
-                  <span style={{ display: 'block', fontSize: 10, color: 'var(--secondary)', fontVariantNumeric: 'tabular-nums' }}>
-                    {Math.round(pop)}%
-                  </span>
+                  <span className="daily-day__pop">{Math.round(pop)}% rain</span>
                 )}
               </div>
               <div className="daily-icon"><AnimatedWeatherIcon code={code} isDay={true} size={18} /></div>
