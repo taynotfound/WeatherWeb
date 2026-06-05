@@ -29,6 +29,16 @@ export function TempCurveCard({ weather }: Props) {
     return { times, tempsC, feelsC, pops };
   }, [weather]);
 
+  // ⚠️ All hooks must run before any conditional return — keep autoIdx here
+  const autoIdx = useMemo(() => {
+    const tempsC = data?.tempsC ?? [];
+    let best = 0;
+    for (let i = 0; i < tempsC.length; i++) {
+      if (tempsC[i] > tempsC[best]) best = i;
+    }
+    return best;
+  }, [data]);
+
   if (!data) return null;
   const { times, tempsC, feelsC, pops } = data;
   const n = times.length;
@@ -53,15 +63,6 @@ export function TempCurveCard({ weather }: Props) {
   // POP bars at bottom
   const popH = 22;
   const popY = H - 4 - popH;
-
-  // Auto pick warmest hour as default selection
-  const autoIdx = useMemo(() => {
-    let best = 0;
-    for (let i = 0; i < tempsC.length; i++) {
-      if (tempsC[i] > tempsC[best]) best = i;
-    }
-    return best;
-  }, [tempsC]);
   const activeIdx = sel ?? autoIdx;
   const active = {
     time: times[activeIdx],
