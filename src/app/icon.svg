@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <radialGradient id="b" cx=".34" cy=".36" r=".78"><stop offset="0" stop-color="#ff7a55"/><stop offset=".55" stop-color="#ec3b25"/><stop offset="1" stop-color="#b5180f"/></radialGradient>
+    <linearGradient id="l" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5fcf6e"/><stop offset="1" stop-color="#24924a"/></linearGradient>
+  </defs>
+  <path d="M64 33c18-6 46 4 52 34 6 30-14 53-52 53S6 97 12 67c6-30 34-40 52-34z" fill="url(#b)"/>
+  <path d="M46 40c-10 18-10 52 2 76M82 40c10 18 10 52-2 76" fill="none" stroke="#9d1209" stroke-opacity=".22" stroke-width="3" stroke-linecap="round"/>
+  <ellipse cx="38" cy="58" rx="11" ry="6.5" transform="rotate(-38 38 58)" fill="#fff" opacity=".5"/>
+  <circle cx="31" cy="72" r="3" fill="#fff" opacity=".35"/>
+  <path d="M64 30c-1-8 1-15 8-20" fill="none" stroke="#1f7a3c" stroke-width="6" stroke-linecap="round"/>
+  <path d="M64 40c-6 0-12-2-16-6 6 0 10-1 12-4-8-2-16-1-24 4 6-9 16-13 25-11-4-4-5-9-4-15 5 5 9 9 11 13 2-4 6-8 11-13 1 6 0 11-4 15 9-2 19 2 25 11-8-5-16-6-24-4 2 3 6 4 12 4-4 4-10 6-16 6z" fill="url(#l)"/>
+</svg>
