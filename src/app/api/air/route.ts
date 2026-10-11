@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { env } from '@/lib/env';
 
 export const revalidate = 1800;
 
@@ -26,11 +27,20 @@ export async function GET(req: NextRequest) {
       `&current=european_aqi,us_aqi,pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone,` +
       `alder_pollen,birch_pollen,grass_pollen,mugwort_pollen,olive_pollen,ragweed_pollen,dust` +
       `&timezone=auto`;
-    const r = await fetch(url, { next: { revalidate: 1800 } });
-    if (!r.ok) throw new Error(`air-quality ${r.status}`);
-    const j = await r.json();
+    const key = env.weatherApi();
+    const [omR, waR] = await Promise.allSettled([
+      fetch(url, { next: { revalidate: 1800 } }).then(r => { if (!r.ok) throw new Error(`air-quality ${r.status}`); return r.json(); }),
+      key ? fetch(`https://api.weatherapi.com/v1/current.json?key=${key}&q=${lat},${lon}&aqi=yes`, { next: { revalidate: 1800 } }).then(r => r.json()) : Promise.reject(new Error('no key')),
+    ]);
+    const j = omR.status === 'fulfilled' ? omR.value : null;
+    const wq = waR.status === 'fulfilled' ? waR.value?.current?.air_quality : null;
+    if (!j && !wq) throw new Error('air-quality unavailable');
     const c = j?.current || {};
-    const meta = aqiLabel(c.european_aqi);
+    if (wq) {
+      c.pm2_5 ??= wq.pm2_5; c.pm10 ??= wq.pm10; c.ozone ??= wq.o3; c.nitrogen_dioxide ??= wq.no2;
+      c.sulphur_dioxide ??= wq.so2; c.carbon_monoxide ??= wq.co; c.us_aqi ??= ({1:25,2:75,3:125,4:175,5:250,6:350} as any)[wq['us-epa-index']];
+    }
+    const meta = aqiLabel(c.european_aqi ?? (c.us_aqi != null ? c.us_aqi * 0.4 : NaN));
     const pollens = {
       alder: c.alder_pollen, birch: c.birch_pollen, grass: c.grass_pollen,
       mugwort: c.mugwort_pollen, olive: c.olive_pollen, ragweed: c.ragweed_pollen,
@@ -49,6 +59,7 @@ export async function GET(req: NextRequest) {
       no2: c.nitrogen_dioxide ?? null,
       so2: c.sulphur_dioxide ?? null,
       co: c.carbon_monoxide ?? null,
+      sources: [...(j ? ['open-meteo'] : []), ...(wq ? ['weatherapi'] : [])],
       label: meta.label,
       tone: meta.tone,
       pollen: {

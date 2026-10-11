@@ -1,42 +1,24 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
-export type SavedLocation = {
-  id: string;
-  name: string;
-  country: string;
-  latitude: number;
-  longitude: number;
-};
-
+export type SavedLocation = { id: string; name: string; country: string; countryCode?: string; latitude: number; longitude: number };
 const KEY = 'tomato.favorites';
+const RECENT = 'tomato.recent';
+
+const read = <T,>(k: string): T[] => { try { return JSON.parse(localStorage.getItem(k) || '[]'); } catch { return []; } };
+const write = (k: string, v: unknown) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+
+export const locId = (lat: number, lon: number) => `${lat.toFixed(2)},${lon.toFixed(2)}`;
 
 export function useFavorites() {
   const [favorites, setFavorites] = useState<SavedLocation[]>([]);
+  const [recent, setRecent] = useState<SavedLocation[]>([]);
+  useEffect(() => { setFavorites(read(KEY)); setRecent(read(RECENT)); }, []);
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(KEY);
-      if (raw) setFavorites(JSON.parse(raw));
-    } catch {}
-  }, []);
-
-  function persist(next: SavedLocation[]) {
-    setFavorites(next);
-    try { localStorage.setItem(KEY, JSON.stringify(next)); } catch {}
-  }
-
-  function add(loc: SavedLocation) {
-    if (favorites.some(f => f.id === loc.id)) return;
-    persist([...favorites, loc]);
-  }
-  function remove(id: string) {
-    persist(favorites.filter(f => f.id !== id));
-  }
-  function isFav(id: string) {
-    return favorites.some(f => f.id === id);
-  }
-
-  return { favorites, add, remove, isFav };
+  const add = useCallback((l: SavedLocation) => setFavorites(f => { if (f.some(x => x.id === l.id)) return f; const n = [...f, l]; write(KEY, n); return n; }), []);
+  const remove = useCallback((id: string) => setFavorites(f => { const n = f.filter(x => x.id !== id); write(KEY, n); return n; }), []);
+  const pushRecent = useCallback((l: SavedLocation) => setRecent(r => { const n = [l, ...r.filter(x => x.id !== l.id)].slice(0, 6); write(RECENT, n); return n; }), []);
+  const isFav = useCallback((id: string) => favorites.some(f => f.id === id), [favorites]);
+  return { favorites, recent, add, remove, isFav, pushRecent };
 }

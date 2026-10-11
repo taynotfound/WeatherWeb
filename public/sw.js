@@ -1,5 +1,5 @@
-const CACHE = 'aether-v1';
-const ASSETS = ['/', '/manifest.json', '/icon.svg'];
+const CACHE = 'tomato-v4';
+const ASSETS = ['/', '/manifest.json', '/tomato.svg', '/icon-192.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));
@@ -17,9 +17,16 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
+  // map tiles, fonts and other third-party requests: let the browser cache handle them
+  if (url.origin !== self.location.origin || e.request.method !== 'GET') return;
   // network-first for API
   if (url.pathname.startsWith('/api/')) {
     e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+    return;
+  }
+  // pages: network-first so a new deploy is never masked by a stale shell
+  if (e.request.mode === 'navigate') {
+    e.respondWith(fetch(e.request).catch(() => caches.match('/')));
     return;
   }
   // stale-while-revalidate for everything else

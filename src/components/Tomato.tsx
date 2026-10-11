@@ -1,73 +1,18 @@
-'use client';
+// Tomato, the red rabbit: brand mark + mascot. Geometry lives in lib/rabbit.ts; the mascot's face and ears follow the sky.
+import { useId, useMemo, type CSSProperties } from 'react';
+import { rabbitSvg, type Mood } from '@/lib/rabbit';
 
-import { useState } from 'react';
-import { Send, X, MessageSquare } from 'lucide-react';
+export { moodFor } from '@/lib/rabbit';
+export type { Mood };
 
-type Msg = { role: 'user' | 'assistant'; content: string };
-
-export function Tomato({ weather }: { weather: any }) {
-  const [open, setOpen] = useState(false);
-  const [msgs, setMsgs] = useState<Msg[]>([]);
-  const [text, setText] = useState('');
-  const [busy, setBusy] = useState(false);
-
-  async function send() {
-    const q = text.trim();
-    if (!q || busy) return;
-    const next: Msg[] = [...msgs, { role: 'user', content: q }];
-    setMsgs(next);
-    setText('');
-    setBusy(true);
-    try {
-      const r = await fetch('/api/tomato', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ messages: next, weather }),
-      });
-      const j = await r.json();
-      setMsgs(m => [...m, { role: 'assistant', content: j.reply ?? '…' }]);
-    } catch {
-      setMsgs(m => [...m, { role: 'assistant', content: 'I died for a second. Try again.' }]);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  if (!open) {
-    return (
-      <button className="tomato-fab" onClick={() => setOpen(true)} aria-label="Open Tomato">
-        <MessageSquare size={14} />
-        Ask Tomato
-      </button>
-    );
-  }
-
+export function TomatoMark({ size = 40, face = false, mood = 'happy', className = '', style, title }: {
+  size?: number; face?: boolean; mood?: Mood; className?: string; style?: CSSProperties; title?: string;
+}) {
+  // unique per instance: a duplicate gradient id inside a display:none subtree renders as no fill
+  const id = 'tm' + useId().replace(/[^a-zA-Z0-9]/g, '');
+  const html = useMemo(() => rabbitSvg({ id, face, mood, whiskers: face && size >= 44 }), [id, face, mood, size]);
   return (
-    <div className="tomato-panel" role="dialog" aria-label="Tomato">
-      <div className="tomato-head">
-        <strong style={{ fontSize: 14 }}>Tomato</strong>
-        <button className="btn-icon" onClick={() => setOpen(false)} aria-label="Close"><X size={16} /></button>
-      </div>
-      <div className="tomato-body">
-        {msgs.length === 0 && (
-          <p style={{ color: 'var(--ink-mute)', fontSize: 13 }}>Ask anything about the weather. I'm a sentient tomato and slightly sharp.</p>
-        )}
-        {msgs.map((m, i) => (
-          <div key={i} className={`tomato-msg ${m.role === 'user' ? 'user' : 'bot'}`}>{m.content}</div>
-        ))}
-        {busy && <div className="tomato-msg bot" style={{ color: 'var(--ink-mute)' }}>…</div>}
-      </div>
-      <div className="tomato-foot">
-        <input
-          className="input"
-          placeholder="Type a question"
-          value={text}
-          onChange={e => setText(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && send()}
-          style={{ padding: '8px 10px' }}
-        />
-        <button className="btn btn-primary" onClick={send} disabled={busy} aria-label="Send"><Send size={14} /></button>
-      </div>
-    </div>
+    <svg width={size} height={size} viewBox="0 0 128 128" className={`rabbit ${className}`} style={style} role={title ? 'img' : undefined} aria-label={title} aria-hidden={title ? undefined : true}
+      dangerouslySetInnerHTML={{ __html: html }} />
   );
 }

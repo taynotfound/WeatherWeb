@@ -12,6 +12,7 @@ type Hourly = {
   wind_speed_10m?: number[];
   relative_humidity_2m?: number[];
   uv_index?: number[];
+  is_day?: number[];
 };
 
 export type BestHour = {
@@ -26,6 +27,7 @@ export function findBestHour(hourly: Hourly | null | undefined, windowHours = 14
   const len = Math.min(hourly.time.length, startOffset + windowHours);
   let best: BestHour | null = null;
   for (let i = startOffset; i < len; i++) {
+    if (hourly.is_day?.[i] === 0) continue; // only daylight hours
     const s = outsideScore({
       tempC: hourly.temperature_2m?.[i],
       feelsLikeC: hourly.apparent_temperature?.[i],

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
-export const runtime = 'edge';
+import { env } from '@/lib/env';
+
 export const revalidate = 300;
 
 type Severity = 'minor' | 'moderate' | 'severe' | 'extreme' | 'unknown';
@@ -147,6 +148,30 @@ async function fetchThunderstormSynth(lat: number, lon: number): Promise<Alert[]
   } catch { return []; }
 }
 
+// WeatherAPI.com alerts (global coverage of national warnings where licensed)
+async function fetchWeatherApi(lat: number, lon: number): Promise<Alert[]> {
+  const key = env.weatherApi();
+  if (!key) return [];
+  try {
+    const r = await fetch(`https://api.weatherapi.com/v1/forecast.json?key=${key}&q=${lat},${lon}&days=1&alerts=yes&aqi=no`, { next: { revalidate: 600 } });
+    if (!r.ok) return [];
+    const j = await r.json();
+    return (j?.alerts?.alert ?? []).map((a: any, i: number) => ({
+      id: `wapi:${a.event}:${a.effective ?? i}`,
+      source: 'WeatherAPI',
+      event: a.event ?? 'Alert',
+      severity: normSeverity(a.severity),
+      urgency: a.urgency,
+      certainty: a.certainty,
+      headline: a.headline ?? a.event ?? 'Weather alert',
+      description: a.desc ?? a.instruction,
+      onset: a.effective,
+      expires: a.expires,
+      areas: a.areas ? String(a.areas).split(';').map((s: string) => s.trim()) : [],
+    } as Alert));
+  } catch { return []; }
+}
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const lat = parseFloat(searchParams.get('lat') ?? '');
@@ -156,7 +181,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'lat/lon required' }, { status: 400 });
   }
 
-  const tasks: Promise<Alert[]>[] = [fetchThunderstormSynth(lat, lon)];
+  const tasks: Promise<Alert[]>[] = [fetchThunderstormSynth(lat, lon), fetchWeatherApi(lat, lon)];
   if (country.toUpperCase() === 'US') tasks.push(fetchNWS(lat, lon));
   else if (country) tasks.push(fetchMeteoalarm(country, lat, lon));
 
