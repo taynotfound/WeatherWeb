@@ -38,7 +38,7 @@ function parseTake(raw: string): string[] {
 type Cached = { at: number; ttl: number; payload: { insights: string[]; live: boolean; generated: string } };
 const CACHE = new Map<string, Cached>();
 const INFLIGHT = new Map<string, Promise<Cached['payload']>>();
-const LIVE_TTL = 2 * 60 * 60_000;
+const LIVE_TTL = 60 * 60_000;
 const FALLBACK_TTL = 3 * 60_000; // retry the LLM soon after a miss, but don't hammer it
 
 export async function POST(req: NextRequest) {
