@@ -1,11 +1,14 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Icon } from './ui';
 import { Scene } from './Scene';
 import { TomatoMark, moodFor } from './Tomato';
 import { condition, compass, sceneKind } from '@/lib/wx';
 import { usePrefs } from '@/lib/prefs';
 import { tomatoVerdict } from '@/lib/attitude';
+
+const BOOPS = ['Boop received.', 'Ears up. Sky checked.', 'Hey! That was my nose.', 'I hop, therefore I forecast.', 'Yes, my name is Tomato. Yes, I know.', 'Careful, these ears are calibrated.'];
 
 export function Hero({ weather, place, rainSoonMin, rainingNow, className = '' }: {
   weather: any; place: string; rainSoonMin: number | null; rainingNow: boolean; className?: string;
@@ -23,6 +26,10 @@ export function Hero({ weather, place, rainSoonMin, rainingNow, className = '' }
   const pop = d?.precipitation_probability_max?.[0];
   const dir = c.windDirection;
   const now = new Date();
+  const [boop, setBoop] = useState<number | null>(null);
+  const [hop, setHop] = useState(0);
+  useEffect(() => { if (boop == null) return; const id = setTimeout(() => setBoop(null), 2600); return () => clearTimeout(id); }, [boop, hop]);
+  const poke = () => { setHop(h => h + 1); setBoop(b => ((b ?? Math.floor(Math.random() * BOOPS.length)) + 1) % BOOPS.length); };
 
   return (
     <section className={`hero ${className}`} aria-label="Current weather">
@@ -57,8 +64,10 @@ export function Hero({ weather, place, rainSoonMin, rainingNow, className = '' }
       </div>
 
       <div className="speech">
-        <TomatoMark size={52} face mood={moodFor(c)} />
-        <p className="bubble">{line}</p>
+        <button className="poke" onClick={poke} aria-label="Poke Tomato">
+          <TomatoMark key={hop} size={52} face mood={moodFor(c)} className={hop ? 'hop' : ''} />
+        </button>
+        <p className="bubble" aria-live="polite">{boop != null ? BOOPS[boop] : line}</p>
       </div>
 
       <div className="metrics">

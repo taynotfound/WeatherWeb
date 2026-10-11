@@ -9,6 +9,7 @@ import { condition, compass, uvLabel } from '@/lib/wx';
 import { suggestOutfit } from '@/lib/outfit';
 import { allScores } from '@/lib/scores';
 import { findBestHour } from '@/lib/bestHour';
+import { readTake, takeKey, writeTake, type Take } from '@/lib/takeCache';
 
 export const nowIdx = (w: any) => {
   const times: string[] = w?.hourly?.time ?? [];
@@ -200,32 +201,43 @@ export function ScoresCard({ weather, className = 's4' }: { weather: any; classN
 
 /* ---------- Tomato's take (AI summary + best hour) ---------- */
 export function InsightsCard({ weather, air, alerts, className = 's4' }: { weather: any; air: any; alerts: any; className?: string }) {
-  const [lines, setLines] = useState<string[] | null>(null);
-  const [failed, setFailed] = useState(false);
-  const { t, unit } = usePrefs();
-  const key = `${weather.location.latitude.toFixed(1)},${weather.location.longitude.toFixed(1)}`;
+  const { t, unit, attitude } = usePrefs();
+  const key = takeKey(weather, unit, attitude);
+  const [take, setTake] = useState<Take | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [nonce, setNonce] = useState(0);
   useEffect(() => {
+    const cached = nonce ? null : readTake(key);
+    if (cached) { setTake(cached); return; }
     let alive = true;
-    setLines(null); setFailed(false);
-    fetch('/api/insights', {
+    setBusy(true);
+    if (!nonce) setTake(null);
+    const load = (attempt: number): Promise<void> => fetch('/api/insights', {
       method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ weather, air, alerts: alerts?.alerts?.slice(0, 2), unit }),
-    }).then(r => r.json()).then(j => { if (!alive) return; if (j.insights?.length) setLines(j.insights); else setFailed(true); }).catch(() => alive && setFailed(true));
+      body: JSON.stringify({ weather, air, alerts: alerts?.alerts?.slice(0, 2), unit, attitude, fresh: nonce > 0 }),
+    }).then(r => r.json()).then(j => {
+      if (!j.insights?.length) throw new Error('empty');
+      const v: Take = { insights: j.insights, live: !!j.live, at: Date.now() };
+      if (alive) { setTake(v); writeTake(key, v); }
+    }).catch(() => attempt < 1 && alive ? new Promise(r => setTimeout(r, 1500)).then(() => load(attempt + 1)) : undefined);
+    load(0).finally(() => alive && setBusy(false));
     return () => { alive = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, unit]);
+  }, [key, nonce]);
 
+  const lines = take?.insights;
   const best = useMemo(() => findBestHour(weather.hourly, 18, nowIdx(weather) + 1), [weather]);
   return (
     <section className={`card brand take ${className}`}>
       <header className="card-h">
-        <span className="ibadge sh-flower" style={{ background: 'color-mix(in srgb, var(--tm-red) 18%, transparent)' }}><TomatoMark size={30} face mood={lines ? moodFor(weather.current) : 'think'} /></span>
-        <div className="grow"><h2>Tomato&apos;s take</h2><p className="sub">{lines ? 'Fresh from the vine' : failed ? 'Offline' : 'Thinking…'}</p></div>
+        <span className="ibadge sh-flower" style={{ background: 'color-mix(in srgb, var(--tm-red) 18%, transparent)' }}><TomatoMark size={30} face mood={lines && !busy ? moodFor(weather.current) : 'think'} /></span>
+        <div className="grow"><h2>Tomato&apos;s take</h2><p className="sub">{busy ? 'Thinking…' : !lines ? 'Lost in thought' : take?.live ? 'Fresh from the burrow' : 'Quick read from the forecast'}</p></div>
+        <button className={`icon-btn state ${busy ? 'spinning' : ''}`} aria-label="Ask Tomato for a fresh take" title="Fresh take" disabled={busy} onClick={() => setNonce(n => n + 1)}><Icon name="refresh" /></button>
       </header>
-      <div className="take-lines">
+      <div className="take-lines" aria-busy={busy}>
         {lines ? lines.map((l, i) => <p key={i}>{l}</p>)
-          : failed ? <p>No summary right now. The numbers are all still here, though.</p>
-          : [92, 70, 82].map(w => <div key={w} className="skel" style={{ height: 18, width: `${w}%`, borderRadius: 9, opacity: .5 }} />)}
+          : busy ? [92, 70, 82].map(w => <div key={w} className="skel" style={{ height: 18, width: `${w}%`, borderRadius: 9, opacity: .5 }} />)
+          : <p>Couldn&apos;t reach Tomato. Tap refresh to try again.</p>}
       </div>
       {best && (
         <div className="best card-foot">

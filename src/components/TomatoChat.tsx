@@ -43,7 +43,7 @@ export function TomatoChat({ weather, rainSoonMin, onClose }: { weather: any; ra
       const j = await r.json();
       setMsgs(m => [...m, { role: 'assistant', content: j.reply ?? '…' }]);
     } catch {
-      setMsgs(m => [...m, { role: 'assistant', content: 'I wilted for a second. Try again.' }]);
+      setMsgs(m => [...m, { role: 'assistant', content: 'My ears lost the signal for a second. Try again.' }]);
     } finally { setBusy(false); }
   }
 
@@ -73,7 +73,7 @@ export function TomatoChat({ weather, rainSoonMin, onClose }: { weather: any; ra
           <div className="chat-hello">
             <TomatoMark size={96} face mood={moodFor(weather?.current)} />
             <div className="hi">Hi, I&apos;m Tomato.</div>
-            <p className="body-m muted" style={{ maxWidth: '36ch' }}>A small round weather expert with opinions. I can see your forecast{place ? ` for ${place}` : ''}. Ask me anything.</p>
+            <p className="body-m muted" style={{ maxWidth: '36ch' }}>A red rabbit with long ears, strong opinions and your forecast in paw. I can see your forecast{place ? ` for ${place}` : ''}. Ask me anything.</p>
             <div className="suggest">{SUGGEST.map(s => <button key={s} className="chip state" onClick={() => send(s)}>{s}</button>)}</div>
           </div>
         )}

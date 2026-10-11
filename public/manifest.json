@@ -1,7 +1,7 @@
 {
   "name": "Tomato — weather, with attitude",
   "short_name": "Tomato",
-  "description": "Weather from six sources, live radar and satellite, and a tomato with opinions about what you should wear.",
+  "description": "Weather from six sources, live radar and satellite, and a red rabbit named Tomato with opinions about what you should wear.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

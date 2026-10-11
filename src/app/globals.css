@@ -1,6 +1,6 @@
 /* Tomato — Material 3 (Expressive) with a Tomato brand layer.
    Color roles are generated at runtime from the sky (lib/theme.tsx); the values below are the baseline so
-   first paint is never unstyled. Brand tokens (--tm-*) are fixed: the tomato is always red. */
+   first paint is never unstyled. Brand tokens (--tm-*) are fixed: Tomato the rabbit is always red. */
 
 :root {
   --md-primary: #3c6090;
@@ -495,6 +495,39 @@ img, svg { display: block; }
 .sheet-b { overflow: auto; padding: 0 20px 20px; display: flex; flex-direction: column; gap: 12px; overscroll-behavior: contain; }
 .dialog { position: fixed; z-index: 61; inset: 0; margin: auto; width: min(560px, calc(100vw - 32px)); height: fit-content; max-height: calc(100dvh - 48px); background: var(--md-surface-container-high); border-radius: var(--r-xl); padding: 24px; display: flex; flex-direction: column; gap: 16px; overflow: auto; animation: pop var(--dur-m) var(--ease-emph); }
 .setting { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+/* ---------- share sheet ---------- */
+.share-b { gap: 16px; }
+.share-preview { display: grid; place-items: center; border-radius: var(--r-lg); background: var(--md-surface-container); padding: 12px; }
+.share-preview img, .share-preview .skel { display: block; max-width: 100%; max-height: min(44dvh, 420px); border-radius: 16px; box-shadow: var(--elev-2); animation: fade var(--dur-m); }
+.share-preview.post .skel { aspect-ratio: 1; height: min(44dvh, 420px); }
+.share-preview.story .skel { aspect-ratio: 9 / 16; height: min(44dvh, 420px); }
+.share-preview.wide .skel { aspect-ratio: 1200 / 630; width: 100%; }
+.share-opts { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.swatches { display: flex; gap: 10px; }
+.swatch { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; border: 2px solid var(--md-outline-variant); color: var(--md-on-surface); transition: border-radius var(--dur-m) var(--ease-spring), transform var(--dur-s); }
+.swatch.on { border-color: var(--md-primary); border-radius: 14px; box-shadow: 0 0 0 2px var(--md-surface-container-low) inset; }
+.swatch .ms { font-size: 20px; filter: drop-shadow(0 0 2px rgba(255,255,255,.8)); }
+.share-b .chip:disabled { opacity: .38; pointer-events: none; }
+.share-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.share-actions .btn { flex: 1 1 auto; height: 48px; }
+.share-social { display: flex; gap: 4px; justify-content: space-between; overflow-x: auto; scrollbar-width: none; }
+.soc { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 6px; min-width: 68px; border-radius: var(--r-md); color: var(--md-on-surface); }
+.soc-i { width: 52px; height: 52px; border-radius: 18px; display: grid; place-items: center; color: #fff; transition: border-radius var(--dur-m) var(--ease-spring), transform var(--dur-s) var(--ease); }
+.soc-i b { font-size: 24px; font-weight: 700; }
+.soc:hover .soc-i { border-radius: 26px; transform: translateY(-2px); }
+.share-link { display: flex; align-items: center; gap: 8px; padding: 4px 4px 4px 14px; border-radius: var(--r-full); background: var(--md-surface-container-highest); color: var(--md-on-surface-variant); }
+.share-link input { flex: 1; min-width: 0; background: none; border: 0; outline: 0; color: var(--md-on-surface); font: inherit; font-size: 14px; }
+
+/* ---------- rabbit life ---------- */
+.rabbit .ear { transform-box: fill-box; transform-origin: 50% 92%; }
+.speech .rabbit, .fab .rabbit, .chat-hello .rabbit { cursor: pointer; }
+.rabbit:hover .ear-r, .fab:hover .rabbit .ear-r { animation: twitch 700ms var(--ease-spring); }
+.rabbit:hover .ear-l, .fab:hover .rabbit .ear-l { animation: twitch 700ms 90ms var(--ease-spring) reverse; }
+@keyframes twitch { 30% { transform: rotate(-12deg); } 60% { transform: rotate(8deg); } }
+.rabbit.hop { animation: hop 620ms var(--ease-spring) !important; }
+@keyframes hop { 0% { transform: translateY(0) scale(1, 1); } 18% { transform: translateY(2px) scale(1.08, .9); } 45% { transform: translateY(-22px) scale(.95, 1.06); } 75% { transform: translateY(0) scale(1.06, .94); } 100% { transform: none; } }
+.poke { display: flex; flex: none; padding: 0; border-radius: 50%; }
+.icon-btn.spinning .ms { animation: spin 900ms linear infinite; }
 .snack { position: fixed; z-index: 70; left: 50%; bottom: calc(var(--nav-h) + 16px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: var(--md-inverse-surface); color: var(--md-inverse-on-surface); padding: 14px 18px; border-radius: var(--r-md); box-shadow: var(--elev-3); animation: rise var(--dur-m) var(--ease-emph); max-width: calc(100vw - 32px); }
 
 /* ---------- Tomato chat ---------- */
@@ -622,7 +655,7 @@ hr.div { border: 0; border-top: 1px solid var(--md-outline-variant); margin: 0; 
   .hero { min-height: 460px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .scene *, .card, .hero, .speech svg, .ibadge, .ibadge .ms { animation: none !important; }
+  .scene *, .card, .hero, .speech svg, .ibadge, .ibadge .ms, .rabbit, .rabbit .ear { animation: none !important; }
 }
 
 /* ---------- expressive shapes (generated by scripts/gen-shapes.py) ---------- */
