@@ -1,13 +1,21 @@
 {
-  "name": "Tomato — Weather, with attitude",
+  "name": "Tomato — weather, with attitude",
   "short_name": "Tomato",
-  "description": "A weather app with a tomato who has opinions about what you should wear.",
+  "description": "Weather from six sources, live radar and satellite, and a tomato with opinions about what you should wear.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#101418",
-  "theme_color": "#101418",
-    "categories": ["weather", "utilities"],
+  "background_color": "#121316",
+  "theme_color": "#121316",
+  "categories": ["weather", "utilities"],
   "icons": [
-    { "src": "/tomato.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+    { "src": "/tomato.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Radar", "url": "/?tab=radar", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Forecast", "url": "/?tab=forecast", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
   ]
 }

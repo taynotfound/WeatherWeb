@@ -1,5 +1,5 @@
-const CACHE = 'tomato-v2';
-const ASSETS = ['/', '/manifest.json', '/icon.svg'];
+const CACHE = 'tomato-v3';
+const ASSETS = ['/', '/manifest.json', '/tomato.svg', '/icon-192.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));
@@ -17,6 +17,8 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
+  // map tiles, fonts and other third-party requests: let the browser cache handle them
+  if (url.origin !== self.location.origin || e.request.method !== 'GET') return;
   // network-first for API
   if (url.pathname.startsWith('/api/')) {
     e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));

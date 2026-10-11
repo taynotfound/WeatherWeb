@@ -12,12 +12,12 @@ export function Scene({ kind, isDay, intensity = 1 }: { kind: SceneKind; isDay: 
     return {
       drops: Array.from({ length: n(kind === 'drizzle' ? 22 : kind === 'storm' ? 46 : 36) }, (_, i) => ({ l: rnd(i, 1) * 110 - 5, d: 0.6 + rnd(i, 2) * 0.7, dl: -rnd(i, 3) * 2 })),
       flakes: Array.from({ length: n(34) }, (_, i) => ({ l: rnd(i, 4) * 100, s: 3 + rnd(i, 5) * 5, d: 5 + rnd(i, 6) * 6, dl: -rnd(i, 7) * 8 })),
-      stars: Array.from({ length: 26 }, (_, i) => ({ l: rnd(i, 8) * 100, t: rnd(i, 9) * 60, dl: rnd(i, 10) * 3 })),
-      clouds: Array.from({ length: 4 }, (_, i) => ({ t: 8 + rnd(i, 11) * 55, w: 120 + rnd(i, 12) * 120, d: 50 + rnd(i, 13) * 50, dl: -rnd(i, 14) * 80 })),
+      stars: Array.from({ length: 30 }, (_, i) => ({ l: rnd(i, 8) * 100, t: rnd(i, 9) * 45, dl: rnd(i, 10) * 3 })),
+      clouds: Array.from({ length: 4 }, (_, i) => ({ t: 2 + rnd(i, 11) * 34, w: 110 + rnd(i, 12) * 110, d: 50 + rnd(i, 13) * 50, dl: -rnd(i, 14) * 80 })),
     };
   }, [kind, intensity]);
 
-  const clouds = kind === 'partly' ? 2 : kind === 'clear' ? 0 : kind === 'cloud' || kind === 'fog' ? 4 : 4;
+  const clouds = kind === 'partly' ? 2 : kind === 'clear' ? 0 : 3;
   const showSky = kind === 'clear' || kind === 'partly';
 
   return (

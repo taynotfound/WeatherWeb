@@ -32,7 +32,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
         </div>
         {install && <button className="btn tonal has-icon state" onClick={() => { install.prompt(); setInstall(null); }}><Icon name="install_mobile" />Install Tomato</button>}
         <p className="body-s muted">
-          Forecast data: Open-Meteo · MET Norway · WeatherAPI.com · ECMWF/NOAA/DWD models via Open-Meteo. Radar: RainViewer. Warnings: NWS, Meteoalarm, WeatherAPI.
+          Forecast data: Open-Meteo · MET Norway · WeatherAPI.com · ECMWF/NOAA/DWD models via Open-Meteo. Radar: RainViewer. Satellite: EUMETSAT, Esri. Maps: OpenFreeMap, © OpenStreetMap. Warnings: NWS, Meteoalarm, WeatherAPI.
         </p>
       </div>
     </Dialog>

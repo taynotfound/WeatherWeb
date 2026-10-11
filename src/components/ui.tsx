@@ -1,23 +1,25 @@
 'use client';
 
-import { ReactNode, useEffect, useRef } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 
 export function Icon({ name, fill, className = '', style }: { name: string; fill?: boolean; className?: string; style?: React.CSSProperties }) {
   return <span className={`ms ${fill ? 'fill' : ''} ${className}`} style={style} aria-hidden="true">{name}</span>;
 }
 
-export function Card({ title, icon, sub, tone, className = '', action, children, id }: {
-  title?: string; icon?: string; sub?: string; tone?: 'primary' | 'tertiary' | 'secondary' | 'error' | 'low' | 'high' | 'outlined';
+export type Shape = 'cookie7' | 'cookie9' | 'cookie12' | 'sunny' | 'clover' | 'flower' | 'burst';
+
+export function Card({ title, icon, shape = 'cookie9', sub, tone, className = '', action, children, id }: {
+  title?: string; icon?: string; shape?: Shape; sub?: string; tone?: 'primary' | 'tertiary' | 'secondary' | 'error' | 'low' | 'high' | 'brand';
   className?: string; action?: ReactNode; children: ReactNode; id?: string;
 }) {
   return (
     <section id={id} className={`card ${tone ?? ''} ${className}`}>
       {title && (
         <header className="card-h">
-          {icon && <Icon name={icon} />}
+          {icon && <span className={`ibadge sh-${shape}`}><Icon name={icon} /></span>}
           <div className="grow">
-            <h2 className="title-m">{title}</h2>
-            {sub && <p className="body-s muted" style={{ color: 'inherit', opacity: .75 }}>{sub}</p>}
+            <h2>{title}</h2>
+            {sub && <p className="sub">{sub}</p>}
           </div>
           {action}
         </header>
@@ -25,6 +27,23 @@ export function Card({ title, icon, sub, tone, className = '', action, children,
       {children}
     </section>
   );
+}
+
+/** Element size in CSS px, so charts can draw at 1:1 instead of scaling text with a viewBox. */
+export function useSize<T extends HTMLElement>(): [React.RefObject<T | null>, number, number] {
+  const ref = useRef<T>(null);
+  const [sz, setSz] = useState<[number, number]>([0, 0]);
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    const ro = new ResizeObserver(([e]) => setSz([Math.round(e.contentRect.width), Math.round(e.contentRect.height)]));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return [ref, sz[0], sz[1]];
+}
+export function useWidth<T extends HTMLElement>(): [React.RefObject<T | null>, number] {
+  const [ref, w] = useSize<T>();
+  return [ref, w];
 }
 
 export function Switch({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
@@ -53,19 +72,23 @@ function useEscape(onClose: () => void) {
   }, [onClose]);
 }
 
-export function Sheet({ title, icon, onClose, children, footer }: { title: string; icon?: string; onClose: () => void; children: ReactNode; footer?: ReactNode }) {
+export function Sheet({ title, icon, onClose, children, footer, header, className = '' }: {
+  title: string; icon?: string; onClose: () => void; children: ReactNode; footer?: ReactNode; header?: ReactNode; className?: string;
+}) {
   useEscape(onClose);
   return (
     <>
       <div className="scrim" onClick={onClose} />
-      <div className="sheet" role="dialog" aria-modal="true" aria-label={title}>
-        <div className="sheet-h">
-          {icon && <Icon name={icon} />}
-          <h2 className="title-l grow">{title}</h2>
-          <button className="icon-btn state" onClick={onClose} aria-label="Close"><Icon name="close" /></button>
-        </div>
-        <div className="sheet-b">{children}</div>
-        {footer && <div style={{ padding: '0 24px 16px' }}>{footer}</div>}
+      <div className={`sheet ${className}`} role="dialog" aria-modal="true" aria-label={title}>
+        {header ?? (
+          <div className="sheet-h">
+            {icon && <span className="ibadge sh-cookie9"><Icon name={icon} /></span>}
+            <h2 className="title-l grow">{title}</h2>
+            <button className="icon-btn state" onClick={onClose} aria-label="Close"><Icon name="close" /></button>
+          </div>
+        )}
+        {header ? children : <div className="sheet-b">{children}</div>}
+        {footer}
       </div>
     </>
   );

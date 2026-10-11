@@ -5,25 +5,26 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon, Snack } from '@/components/ui';
 import { Hero } from '@/components/Hero';
 import { DetailsCard, HourlyCard, InsightsCard, OutfitCard, RainCard, ScoresCard, SourcesCard, SunCard, TempChartCard, WindCard } from '@/components/TodayCards';
-import { ClimateCard, DailyCard, ModelChartCard, WeekCard } from '@/components/ForecastCards';
+import { ClimateCard, DailyCard, ModelChartCard, RainWeekCard, WeekCard } from '@/components/ForecastCards';
 import { AqiCard, PollenCard, UvCard } from '@/components/AirCards';
 import { AlertBanner } from '@/components/AlertsUI';
 import { SkyView } from '@/components/SkyView';
 import { TomatoChat, TomatoFab } from '@/components/TomatoChat';
+import { TomatoMark } from '@/components/Tomato';
 import { SettingsDialog } from '@/components/Settings';
 import { locId, useFavorites, type SavedLocation } from '@/lib/favorites';
 import { usePrefs } from '@/lib/prefs';
 import { seedFor, useTheme } from '@/lib/theme';
 import { sceneKind } from '@/lib/wx';
 
-const RadarMap = dynamic(() => import('@/components/RadarMap'), { ssr: false, loading: () => <div className="skel" style={{ height: 460 }} /> });
+const WeatherMap = dynamic(() => import('@/components/WeatherMap'), { ssr: false, loading: () => <div className="skel map-wrap" /> });
 
 type Loc = { lat: number; lon: number; name: string; country: string; countryCode: string };
 const LONDON: Loc = { lat: 51.5074, lon: -0.1278, name: 'London', country: 'United Kingdom', countryCode: 'GB' };
 const TABS = [
   { id: 'today', label: 'Today', icon: 'home' },
   { id: 'forecast', label: 'Forecast', icon: 'calendar_month' },
-  { id: 'radar', label: 'Radar', icon: 'map' },
+  { id: 'radar', label: 'Map', icon: 'map' },
   { id: 'air', label: 'Air', icon: 'air' },
   { id: 'sky', label: 'Sky', icon: 'nights_stay' },
 ] as const;
@@ -42,7 +43,7 @@ export default function Home() {
   const [q, setQ] = useState('');
   const [results, setResults] = useState<any[]>([]);
   const [focus, setFocus] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [scrolled, setScrolled] = useState(0);
   const [chat, setChat] = useState(false);
   const [settings, setSettings] = useState(false);
   const [snack, setSnack] = useState<string | null>(null);
@@ -136,7 +137,7 @@ export default function Home() {
   }, [q]);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
+    const onScroll = () => setScrolled(window.scrollY > 8 ? (window.scrollY > 160 ? 2 : 1) : 0);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
@@ -200,15 +201,24 @@ export default function Home() {
   const showFav = () => loc && (isFav ? fav.remove(id) : (fav.add({ id, name: place, country: loc.country, countryCode: loc.countryCode, latitude: loc.lat, longitude: loc.lon }), toast('Saved')));
   const pickSaved = (f: SavedLocation) => go({ lat: f.latitude, lon: f.longitude, name: f.name, country: f.country, countryCode: f.countryCode || '' });
 
+  const tabBtn = (t: (typeof TABS)[number]) => (
+    <button key={t.id} role="tab" aria-selected={tab === t.id} className="nav-item" onClick={() => { setTab(t.id); window.scrollTo({ top: 0 }); }}>
+      <span className="nav-pill state"><Icon name={t.icon} />{t.id === 'air' && alertCount > 0 && <span className="badge">{alertCount}</span>}</span>
+      {t.label}
+    </button>
+  );
+  const fl = loc!;
+
   return (
     <div className="app">
+      <div className="sky-glow" aria-hidden />
       <header className={`topbar ${scrolled ? 'scrolled' : ''}`}>
         <div className="topbar-in">
-          <div className="brand"><img src="/tomato.svg" alt="" />Tomato</div>
-          <div className="searchbar" role="search">
+          <div className="topbrand"><TomatoMark size={34} title="Tomato" /></div>
+          <div className={`searchbar ${focus ? 'open' : ''}`} role="search">
             <Icon name="search" />
             <input ref={searchRef} value={q} onChange={e => setQ(e.target.value)} onFocus={() => setFocus(true)} onBlur={() => setTimeout(() => setFocus(false), 150)}
-              placeholder={place ? `${place} — search places` : 'Search places'} aria-label="Search places" autoComplete="off" />
+              placeholder={place || 'Search places'} aria-label="Search places" autoComplete="off" />
             {q ? <button className="icon-btn state" aria-label="Clear" onClick={() => setQ('')}><Icon name="close" /></button>
               : <button className="icon-btn state" aria-label="Use my location" onClick={locate}><Icon name="my_location" /></button>}
             {focus && (
@@ -222,14 +232,14 @@ export default function Home() {
                 ) : (
                   <>
                     <button className="li state" onMouseDown={e => e.preventDefault()} onClick={locate}><Icon name="my_location" /><div className="li-body body-l">Current location</div></button>
-                    {fav.favorites.length > 0 && <div className="sub-h label-m">Saved</div>}
+                    {fav.favorites.length > 0 && <div className="sub-h overline">Saved</div>}
                     {fav.favorites.map(f => (
-                      <div key={f.id} className="row">
+                      <div key={f.id} className="row" style={{ gap: 0, paddingRight: 8 }}>
                         <button className="li state grow" onMouseDown={e => e.preventDefault()} onClick={() => pickSaved(f)}><Icon name="star" fill /><div className="li-body"><div className="body-l">{f.name}</div><div className="sub">{f.country}</div></div></button>
                         <button className="icon-btn state" aria-label={`Remove ${f.name}`} onMouseDown={e => e.preventDefault()} onClick={() => fav.remove(f.id)}><Icon name="delete" /></button>
                       </div>
                     ))}
-                    {fav.recent.filter(r => !fav.isFav(r.id)).length > 0 && <div className="sub-h label-m">Recent</div>}
+                    {fav.recent.filter(r => !fav.isFav(r.id)).length > 0 && <div className="sub-h overline">Recent</div>}
                     {fav.recent.filter(r => !fav.isFav(r.id)).slice(0, 4).map(f => (
                       <button key={f.id} className="li state" onMouseDown={e => e.preventDefault()} onClick={() => pickSaved(f)}><Icon name="history" /><div className="li-body"><div className="body-l">{f.name}</div><div className="sub">{f.country}</div></div></button>
                     ))}
@@ -244,80 +254,85 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="main">
+      <main className={`main ${tab === 'radar' ? 'map-mode' : ''}`}>
         {err && !weather && (
           <div className="card error" style={{ marginTop: 16 }}>
-            <div className="card-h"><Icon name="cloud_off" /><h2 className="title-m grow">Couldn't load the weather</h2></div>
+            <div className="card-h"><span className="ibadge sh-cookie9"><Icon name="cloud_off" /></span><h2 className="grow">Couldn&apos;t load the weather</h2></div>
             <p className="body-m">{err}</p>
             <button className="btn filled state" style={{ alignSelf: 'flex-start' }} onClick={() => setTick(t => t + 1)}>Retry</button>
           </div>
         )}
-        {(!weather && !err) && (
-          <div className="grid" style={{ marginTop: 8 }}>
-            <div className="skel hero" style={{ minHeight: 380 }} />
-            {[0, 1, 2].map(i => <div key={i} className="skel" style={{ height: 200 }} />)}
+        {(!weather && !err && tab !== 'radar') && (
+          <div className="bento">
+            <div className="skel hero s8" />
+            <div className="skel s4 m12" style={{ minHeight: 300 }} />
+            <div className="skel s12" style={{ minHeight: 220 }} />
+            {[0, 1, 2].map(i => <div key={i} className="skel s4" style={{ minHeight: 240 }} />)}
           </div>
         )}
 
         {weather && c && tab === 'today' && (
-          <div className="grid g3">
+          <div className="bento">
             <AlertBanner alerts={alerts} />
-            <Hero weather={weather} place={fullPlace} rainSoonMin={rainInfo.soon} rainingNow={rainInfo.now || (rain?.raining && c.precipitation > 0)} daily0={{ max: weather.daily?.temperature_2m_max?.[0], min: weather.daily?.temperature_2m_min?.[0] }} />
-            <InsightsCard weather={weather} air={air} alerts={alerts} />
-            <HourlyCard weather={weather} />
-            <OutfitCard weather={weather} />
-            <RainCard data={rain} />
-            <ScoresCard weather={weather} />
-            <TempChartCard weather={weather} />
-            <WindCard weather={weather} />
-            <DetailsCard weather={weather} />
-            <SunCard weather={weather} />
-            <ClimateCard lat={loc!.lat} lon={loc!.lon} weather={weather} />
-            <SourcesCard weather={weather} />
+            <Hero weather={weather} place={fullPlace} rainSoonMin={rainInfo.soon} rainingNow={rainInfo.now || (rain?.raining && c.precipitation > 0)} className="s8" />
+            <InsightsCard weather={weather} air={air} alerts={alerts} className="s4 m12" />
+            <HourlyCard weather={weather} className="s12" />
+            <RainCard data={rain} className="s4" />
+            <OutfitCard weather={weather} className="s4" />
+            <ScoresCard weather={weather} className="s4 m12" />
+            <TempChartCard weather={weather} className="s8" />
+            <WindCard weather={weather} className="s4 m12" />
+            <DetailsCard weather={weather} className="s4" />
+            <SunCard weather={weather} className="s4" />
+            <ClimateCard lat={fl.lat} lon={fl.lon} weather={weather} className="s4 m12" />
+            <SourcesCard weather={weather} className="s12" />
           </div>
         )}
 
         {weather && tab === 'forecast' && (
-          <div className="grid g3">
-            <WeekCard weather={weather} />
-            <TempChartCard weather={weather} />
-            <DailyCard weather={weather} />
-            <ClimateCard lat={loc!.lat} lon={loc!.lon} weather={weather} />
-            <SunCard weather={weather} />
-            <ModelChartCard weather={weather} lat={loc!.lat} lon={loc!.lon} />
+          <div className="bento">
+            <div className="stack s4 m12">
+              <WeekCard weather={weather} className="" />
+              <RainWeekCard weather={weather} className="" />
+              <ClimateCard lat={fl.lat} lon={fl.lon} weather={weather} className="" />
+            </div>
+            <DailyCard weather={weather} className="s8" />
+            <TempChartCard weather={weather} hours={168} title="The week, hour by hour" className="s12" />
+            <ModelChartCard lat={fl.lat} lon={fl.lon} className="s12" />
           </div>
         )}
 
-        {loc && tab === 'radar' && <div style={{ marginTop: 8 }}><RadarMap lat={loc.lat} lon={loc.lon} /></div>}
+        {loc && tab === 'radar' && <WeatherMap lat={loc.lat} lon={loc.lon} />}
 
         {weather && tab === 'air' && (
-          <div className="grid g3">
+          <div className="bento">
             <AlertBanner alerts={alerts} />
-            <AqiCard air={air} />
-            <UvCard weather={weather} />
-            <PollenCard air={air} />
+            <AqiCard air={air} className="s8" />
+            <UvCard weather={weather} className="s4 m12" />
+            <PollenCard air={air} className="s12" />
           </div>
         )}
 
-        {weather && tab === 'sky' && <SkyView lat={loc!.lat} lon={loc!.lon} weather={weather} />}
+        {weather && tab === 'sky' && <SkyView lat={fl.lat} lon={fl.lon} weather={weather} />}
 
-        <footer className="footer">
-          Made with 🍅 by <a href="https://taymaerz.de" target="_blank" rel="noopener noreferrer">Tay</a> · <a href="https://taymaerz.de/impressum" target="_blank" rel="noopener noreferrer">Impressum</a>
-          {weather?.sources && <><br />Sources: {weather.sources.used.join(' · ')}{loading ? ' · refreshing…' : ''}</>}
-        </footer>
+        {tab !== 'radar' && (
+          <footer className="footer">
+            <span className="made">Made with <TomatoMark size={16} /> by <a href="https://taymaerz.de" target="_blank" rel="noopener noreferrer">Tay</a> · <a href="https://taymaerz.de/impressum" target="_blank" rel="noopener noreferrer">Impressum</a></span>
+            {weather?.sources && <span>Sources: {weather.sources.used.join(' · ')}{loading ? ' · refreshing…' : ''}</span>}
+          </footer>
+        )}
       </main>
 
       <nav className="nav" role="tablist" aria-label="Sections">
-        {TABS.map(t => (
-          <button key={t.id} role="tab" aria-selected={tab === t.id} className="nav-item state" onClick={() => { setTab(t.id); window.scrollTo({ top: 0 }); }}>
-            <span className="nav-pill"><Icon name={t.icon} />{t.id === 'air' && alertCount > 0 && <span className="badge">{alertCount}</span>}</span>
-            {t.label}
-          </button>
-        ))}
+        <div className="nav-head">
+          <TomatoMark size={44} title="Tomato" />
+          {weather && <TomatoFab variant="rail" onClick={() => setChat(true)} />}
+        </div>
+        {TABS.map(tabBtn)}
       </nav>
 
-      {weather && <TomatoFab onClick={() => setChat(true)} />}
-      {chat && <TomatoChat weather={weather} onClose={() => setChat(false)} />}
+      {weather && tab !== 'radar' && <TomatoFab variant="float" compact={scrolled === 2} onClick={() => setChat(true)} />}
+      {chat && <TomatoChat weather={weather} rainSoonMin={rainInfo.soon} onClose={() => setChat(false)} />}
       {settings && <SettingsDialog onClose={() => setSettings(false)} />}
       <Snack text={snack} />
     </div>

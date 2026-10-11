@@ -1,5 +1,7 @@
 // Rain truth: merges radar (measured) with four nowcast/forecast sources into one
-// 2h timeline of 15-minute buckets, plus RainViewer radar + satellite frame manifests.
+// 2h timeline of 15-minute buckets, plus the RainViewer radar frame manifest.
+// (RainViewer's free tier dropped satellite + nowcast and caps radar at zoom 7; live satellite
+// comes from /api/sat instead.)
 
 import { NextRequest, NextResponse } from 'next/server';
 import { env } from '@/lib/env';
@@ -87,9 +89,8 @@ export async function GET(req: NextRequest) {
       host: rv.host,
       past: frames(rv.radar?.past),
       nowcast: frames(rv.radar?.nowcast),
-      satellite: frames(rv.satellite?.infrared),
-      tileTemplate: `${rv.host}{path}/256/{z}/{x}/{y}/4/1_1.png`,
-      satTemplate: `${rv.host}{path}/256/{z}/{x}/{y}/0/0_0.png`,
+      tileTemplate: `${rv.host}{path}/256/{z}/{x}/{y}/2/1_1.png`,
+      maxZoom: 7,
     } : null,
   });
 }

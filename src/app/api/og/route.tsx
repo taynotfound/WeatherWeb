@@ -10,6 +10,9 @@ const WMO: Record<string, string> = {
   '82':'⛈','95':'⛈','96':'⛈','99':'⛈',
 };
 
+// The Tomato mark (public/tomato.svg), inlined so the edge renderer needs no fetch.
+const MARK = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjggMTI4Ij4KICA8ZGVmcz4KICAgIDxyYWRpYWxHcmFkaWVudCBpZD0iYiIgY3g9Ii4zNCIgY3k9Ii4zNiIgcj0iLjc4Ij48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNmZjdhNTUiLz48c3RvcCBvZmZzZXQ9Ii41NSIgc3RvcC1jb2xvcj0iI2VjM2IyNSIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI2I1MTgwZiIvPjwvcmFkaWFsR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImwiIHgxPSIwIiB5MT0iMCIgeDI9IjAiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiM1ZmNmNmUiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMyNDkyNGEiLz48L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cGF0aCBkPSJNNjQgMzNjMTgtNiA0NiA0IDUyIDM0IDYgMzAtMTQgNTMtNTIgNTNTNiA5NyAxMiA2N2M2LTMwIDM0LTQwIDUyLTM0eiIgZmlsbD0idXJsKCNiKSIvPgogIDxwYXRoIGQ9Ik00NiA0MGMtMTAgMTgtMTAgNTIgMiA3Nk04MiA0MGMxMCAxOCAxMCA1Mi0yIDc2IiBmaWxsPSJub25lIiBzdHJva2U9IiM5ZDEyMDkiIHN0cm9rZS1vcGFjaXR5PSIuMjIiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPGVsbGlwc2UgY3g9IjM4IiBjeT0iNTgiIHJ4PSIxMSIgcnk9IjYuNSIgdHJhbnNmb3JtPSJyb3RhdGUoLTM4IDM4IDU4KSIgZmlsbD0iI2ZmZiIgb3BhY2l0eT0iLjUiLz4KICA8Y2lyY2xlIGN4PSIzMSIgY3k9IjcyIiByPSIzIiBmaWxsPSIjZmZmIiBvcGFjaXR5PSIuMzUiLz4KICA8cGF0aCBkPSJNNjQgMzBjLTEtOCAxLTE1IDgtMjAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzFmN2EzYyIgc3Ryb2tlLXdpZHRoPSI2IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8cGF0aCBkPSJNNjQgNDBjLTYgMC0xMi0yLTE2LTYgNiAwIDEwLTEgMTItNC04LTItMTYtMS0yNCA0IDYtOSAxNi0xMyAyNS0xMS00LTQtNS05LTQtMTUgNSA1IDkgOSAxMSAxMyAyLTQgNi04IDExLTEzIDEgNiAwIDExLTQgMTUgOS0yIDE5IDIgMjUgMTEtOC01LTE2LTYtMjQtNCAyIDMgNiA0IDEyIDQtNCA0LTEwIDYtMTYgNnoiIGZpbGw9InVybCgjbCkiLz4KPC9zdmc+Cg==';
+
 const TAGLINES = [
   'weather, with attitude',
   'your sky, decoded',
@@ -77,12 +80,10 @@ export async function GET(req: NextRequest) {
             alignItems: 'center', justifyContent: 'center',
             padding: '60px 80px',
           }}>
-            <div style={{ fontSize: 220, lineHeight: 1, marginBottom: 8, filter: 'drop-shadow(0 8px 32px rgba(255,158,100,0.4))' }}>
-              🍅
-            </div>
+            <img src={MARK} width={180} height={180} alt="" />
             <div style={{
               fontSize: 116, fontWeight: 900, letterSpacing: '-2px',
-              lineHeight: 1, marginTop: 8,
+              lineHeight: 1.25, marginTop: 0, paddingBottom: 16,
               backgroundImage: 'linear-gradient(135deg, #dcd7e8 0%, #9d7cd8 100%)',
               backgroundClip: 'text',
               color: 'transparent',
@@ -106,8 +107,8 @@ export async function GET(req: NextRequest) {
             background: 'rgba(157,124,216,0.06)',
             borderTop: '1px solid rgba(157,124,216,0.18)',
           }}>
-            <div style={{ fontSize: 26, color: 'rgba(220,215,232,0.75)', fontWeight: 600 }}>
-              🍅 Tomato Weather
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 26, color: 'rgba(220,215,232,0.75)', fontWeight: 600 }}>
+              <img src={MARK} width={34} height={34} alt="" />Tomato Weather
             </div>
             <div style={{ fontSize: 22, color: 'rgba(157,124,216,0.5)' }}>
               built by Tay · open data
@@ -177,8 +178,8 @@ export async function GET(req: NextRequest) {
           background: 'rgba(157,124,216,0.08)',
           borderTop: '1px solid rgba(157,124,216,0.15)',
         }}>
-          <div style={{ fontSize: 28, color: 'rgba(157,124,216,0.8)', fontWeight: 700 }}>
-            🍅 Tomato Weather
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 28, color: 'rgba(157,124,216,0.8)', fontWeight: 700 }}>
+            <img src={MARK} width={36} height={36} alt="" />Tomato Weather
           </div>
           <div style={{ fontSize: 22, color: 'rgba(157,124,216,0.5)', fontStyle: 'italic' }}>
             {tagline}

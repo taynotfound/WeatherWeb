@@ -42,7 +42,7 @@ export function schemeVars(seedHex: string, dark: boolean): Record<string, strin
   return out;
 }
 
-type Ctx = { mode: ThemeMode; setMode: (m: ThemeMode) => void; dark: boolean; setSeed: (hex: string) => void };
+type Ctx = { mode: ThemeMode; setMode: (m: ThemeMode) => void; dark: boolean; seed: string | null; setSeed: (hex: string) => void };
 const C = createContext<Ctx | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -80,7 +80,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (meta) meta.setAttribute('content', getComputedStyle(root).getPropertyValue('--md-surface').trim() || '#101418');
   }, [seed, dark]);
 
-  const value = useMemo(() => ({ mode, setMode, dark, setSeed }), [mode, setMode, dark]);
+  const value = useMemo(() => ({ mode, setMode, dark, seed, setSeed }), [mode, setMode, dark, seed]);
   return <C.Provider value={value}>{children}</C.Provider>;
 }
 

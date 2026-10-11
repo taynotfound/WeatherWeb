@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { complete } from '@/lib/ai';
 import { tomatoVerdict, type Attitude } from '@/lib/attitude';
+import { weatherContext } from '@/lib/aiContext';
 
 export const maxDuration = 30;
 
@@ -15,30 +16,12 @@ const system = (a: Attitude) => `You are TOMATO, a small, round, sentient tomato
 
 VOICE: ${VOICE[a]} Short: 1-3 sentences. Wit over cleverness. One emoji max, usually zero.
 
-DATA: Each user turn includes current weather JSON. Use only numbers from it. Never invent data; if unsure, say so.
+DATA: Each user turn includes current weather JSON. Use only numbers from it, in the units it gives, rounded as given. Never invent data; if unsure, say so. nextHours arrays are hourly, starting at startsAt.
 - "what should I wear" -> a real outfit (top, bottom, layer, shoes, one accessory).
 - rain questions -> give a timeframe from the data.
 - UV >= 6 -> mention sunscreen casually.
 - "who are you" -> one sentence as Tomato, then ask what they need.
 NEVER: walls of text, markdown headers, bullet lists, "as an AI", hashtags, "stay safe".`;
-
-function trim(w: any) {
-  if (!w) return null;
-  const c = w.current ?? {};
-  const d = w.daily ?? {};
-  return {
-    place: w.location?.name,
-    now: {
-      tempC: c.temperatureC, feelsLikeC: c.feelsLikeC, condition: c.conditionLabel, windKmh: c.windKmh,
-      gustKmh: c.windGustKmh, humidity: c.humidity, uv: c.uvIndex, isDay: c.isDay, precipMm: c.precipitation,
-    },
-    today: { maxC: d.temperature_2m_max?.[0], minC: d.temperature_2m_min?.[0], rainChance: d.precipitation_probability_max?.[0], sunset: d.sunset?.[0] },
-    next6h: w.hourly ? {
-      tempC: w.hourly.temperature_2m?.slice(0, 6), rainChance: w.hourly.precipitation_probability?.slice(0, 6),
-    } : null,
-    rainSoonMin: w._rainSoonMin ?? null,
-  };
-}
 
 export async function POST(req: NextRequest) {
   let attitude: Attitude = 'rude';
@@ -48,10 +31,12 @@ export async function POST(req: NextRequest) {
     const messages: { role: 'user' | 'assistant'; content: string }[] = (body.messages ?? []).slice(-12);
     weather = body.weather;
     if (['mild', 'rude', 'feral'].includes(body.attitude)) attitude = body.attitude;
+    const imperial = body.unit === 'imperial';
+    const rainSoonMin = typeof body.rainSoonMin === 'number' ? body.rainSoonMin : null;
     const last = messages[messages.length - 1];
     if (!last) return NextResponse.json({ reply: 'say something, then.' });
 
-    const ctx = JSON.stringify(trim(weather)).slice(0, 2000);
+    const ctx = JSON.stringify({ ...weatherContext(weather, imperial, 8), rainInMinutes: rainSoonMin }).slice(0, 2400);
     const reply = await complete(
       [
         { role: 'system', content: system(attitude) },

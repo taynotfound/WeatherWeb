@@ -2,11 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as Astro from 'astronomy-engine';
-import 'leaflet/dist/leaflet.css';
-import { Card, Icon, hhmm } from './ui';
+import type { Map as MLMap, GeoJSONSource } from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
+import { Card, Icon, hhmm, localParts } from './ui';
 import { Ring } from './charts';
 import { useTheme } from '@/lib/theme';
-import { moonPhase, goldenHour, blueHour, fmtTime } from '@/lib/astro';
+import { moonPhase } from '@/lib/astro';
+import { loadMapLibre } from './map/maplibre';
+import { buildStyle, readPalette } from './map/style';
 
 const fmt = (d: Date | null | undefined) => (d ? d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '–');
 const rad = (d: number) => (d * Math.PI) / 180;
@@ -22,15 +25,39 @@ const SHOWERS = [
   { n: 'Geminids', m: 12, d: 14, zhr: 150 }, { n: 'Ursids', m: 12, d: 22, zhr: 10 },
 ];
 
-function IssMap({ lat, lon }: { lat: number; lon: number }) {
+/** Moon disc with the terminator drawn from the phase (flipped for the southern hemisphere). */
+function MoonDisc({ age, size = 88, south = false }: { age: number; size?: number; south?: boolean }) {
+  const p = (((age / 29.53) % 1) + 1) % 1, r = size / 2 - 2, cx = size / 2, cy = size / 2;
+  const waxing = p < 0.5, c = Math.cos(2 * Math.PI * p), rx = Math.abs(c) * r;
+  const inner = waxing ? (c > 0 ? 0 : 1) : (c < 0 ? 0 : 1);
+  const lit = `M${cx},${cy - r} A${r},${r} 0 0 ${waxing ? 1 : 0} ${cx},${cy + r} A${rx},${r} 0 0 ${inner} ${cx},${cy - r} Z`;
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: south ? 'scaleX(-1)' : undefined, flex: 'none' }} aria-hidden>
+      <defs><radialGradient id="moonlit" cx=".4" cy=".35" r=".7"><stop offset="0" stopColor="#fbf6e6" /><stop offset="1" stopColor="#d9d0b8" /></radialGradient></defs>
+      <circle cx={cx} cy={cy} r={r} fill="color-mix(in srgb, var(--md-on-surface) 12%, var(--md-surface-container-highest))" />
+      <path d={lit} fill="url(#moonlit)" />
+      {[[.38, .4, .09], [.6, .58, .07], [.45, .68, .05], [.62, .3, .04]].map(([x, y, k], i) => <circle key={i} cx={x * size} cy={y * size} r={k * size} fill="#000" opacity=".07" />)}
+    </svg>
+  );
+}
+
+/** "HH:MM" wall-clock from an Open-Meteo local ISO string, shifted by `min` minutes. */
+const wall = (iso: string, min = 0) => {
+  const { h, mi } = localParts(iso);
+  const t = (((h * 60 + mi + min) % 1440) + 1440) % 1440;
+  const H = Math.floor(t / 60), M = t % 60;
+  return `${H % 12 || 12}:${String(M).padStart(2, '0')} ${H < 12 ? 'AM' : 'PM'}`;
+};
+
+function IssMap({ lat, lon, className = 's12' }: { lat: number; lon: number; className?: string }) {
   const el = useRef<HTMLDivElement>(null);
-  const m = useRef<any>(null);
+  const m = useRef<MLMap | null>(null);
   const mk = useRef<any>(null);
   const trail = useRef<[number, number][]>([]);
-  const line = useRef<any>(null);
-  const { dark } = useTheme();
+  const { dark, seed } = useTheme();
   const [iss, setIss] = useState<any>(null);
   const [err, setErr] = useState(false);
+  const [ver, setVer] = useState(0);
 
   useEffect(() => {
     let alive = true;
@@ -40,42 +67,48 @@ function IssMap({ lat, lon }: { lat: number; lon: number }) {
   }, []);
 
   useEffect(() => {
-    let dead = false; let tiles: any;
-    (async () => {
-      const L = (await import('leaflet')).default;
+    let dead = false;
+    loadMapLibre().then(ml => {
       if (dead || !el.current) return;
-      const map = L.map(el.current, { zoomControl: false, attributionControl: false, worldCopyJump: true, minZoom: 1 }).setView([20, 0], 1);
-      tiles = L.tileLayer(`https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_${dark ? 'Dark' : 'Light'}_Gray_Base/MapServer/tile/{z}/{y}/{x}`, { maxNativeZoom: 16, maxZoom: 6 }).addTo(map);
-      L.marker([lat, lon], { icon: L.divIcon({ className: '', html: '<div class="tm-dot"></div>', iconSize: [18, 18], iconAnchor: [9, 9] }) }).addTo(map);
-      mk.current = L.marker([0, 0], { icon: L.divIcon({ className: '', html: '<span class="ms fill" style="font-size:32px;color:var(--md-tertiary);filter:drop-shadow(0 1px 3px #0008)">satellite_alt</span>', iconSize: [32, 32], iconAnchor: [16, 16] }) });
-      line.current = L.polyline([], { color: 'var(--md-tertiary)', weight: 2, dashArray: '4 6' }).addTo(map);
+      const map = new ml.Map({ container: el.current, style: buildStyle({ dark, satellite: false, p: readPalette() }), center: [lon, 20], zoom: Math.max(0, Math.log2(el.current.clientWidth / 512)), minZoom: 0, maxZoom: 5, attributionControl: { compact: true }, dragRotate: false, pitchWithRotate: false });
+      map.touchZoomRotate.disableRotation();
+      const me = document.createElement('div'); me.className = 'me-dot';
+      new ml.Marker({ element: me }).setLngLat([lon, lat]).addTo(map);
+      const sat = document.createElement('div');
+      sat.innerHTML = '<span class="ms fill" style="font-size:30px;color:var(--md-tertiary);filter:drop-shadow(0 1px 3px #0009)">satellite_alt</span>';
+      mk.current = new ml.Marker({ element: sat });
+      map.on('style.load', () => {
+        map.addSource('trail', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] }, properties: {} } });
+        map.addLayer({ id: 'trail', type: 'line', source: 'trail', paint: { 'line-color': readPalette().primary, 'line-width': 2.5, 'line-dasharray': [1, 2] } });
+        setVer(v => v + 1);
+      });
       m.current = map;
-      setTimeout(() => map.invalidateSize(), 60);
-    })();
+    });
     return () => { dead = true; m.current?.remove(); m.current = null; };
-  }, [dark, lat, lon]);
+  }, [dark, seed, lat, lon]);
 
   useEffect(() => {
-    if (!iss || !m.current) return;
-    const p: [number, number] = [iss.lat, iss.lon];
-    trail.current = [...trail.current.slice(-30), p];
-    mk.current.setLatLng(p).addTo(m.current);
-    line.current.setLatLngs(trail.current);
-  }, [iss, dark]);
+    const map = m.current;
+    if (!iss || !map) return;
+    const last = trail.current[trail.current.length - 1];
+    // start a fresh trail across the antimeridian so the line doesn't streak across the map
+    if (last && Math.abs(last[0] - iss.lon) > 180) trail.current = [];
+    trail.current = [...trail.current.slice(-40), [iss.lon, iss.lat]];
+    mk.current?.setLngLat([iss.lon, iss.lat]).addTo(map);
+    (map.getSource('trail') as GeoJSONSource | undefined)?.setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: trail.current }, properties: {} });
+  }, [iss, ver]);
 
   const dist = iss ? km([lat, lon], [iss.lat, iss.lon]) : null;
   return (
-    <Card title="International Space Station" icon="satellite_alt" sub="Live · updates every 10 s" className="span-all">
-      <div style={{ position: 'relative', height: 260, borderRadius: 'var(--r-lg)', overflow: 'hidden', background: 'var(--md-surface-container-high)' }}>
-        <div ref={el} style={{ position: 'absolute', inset: 0 }} />
-      </div>
+    <Card title="International Space Station" icon="satellite_alt" shape="burst" sub="Live · updates every 10 s" className={className}>
+      <div className="mini-map"><div ref={el} style={{ position: 'absolute', inset: 0 }} /></div>
       {err && !iss && <p className="body-m muted">ISS position unavailable right now.</p>}
       {iss && (
-        <div className="chips">
-          <span className="chip tonal"><Icon name="straighten" />{Math.round(dist!).toLocaleString()} km from you</span>
-          {iss.altitude && <span className="chip tonal"><Icon name="height" />{Math.round(iss.altitude)} km up</span>}
-          {iss.velocity && <span className="chip tonal"><Icon name="speed" />{Math.round(iss.velocity).toLocaleString()} km/h</span>}
-          {dist! < 2200 && <span className="chip selected"><Icon name="visibility" />Possibly visible overhead</span>}
+        <div className="tiles" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
+          <div className="tile"><span className="k"><Icon name="straighten" />Distance</span><span className="v tnum">{Math.round(dist!).toLocaleString()}<small>km</small></span></div>
+          {iss.altitude && <div className="tile"><span className="k"><Icon name="height" />Altitude</span><span className="v tnum">{Math.round(iss.altitude)}<small>km</small></span></div>}
+          {iss.velocity && <div className="tile"><span className="k"><Icon name="speed" />Speed</span><span className="v tnum">{Math.round(iss.velocity).toLocaleString()}<small>km/h</small></span></div>}
+          <div className="tile"><span className="k"><Icon name="visibility" />Overhead?</span><span className="v">{dist! < 2200 ? 'Maybe!' : 'Not now'}</span></div>
         </div>
       )}
     </Card>
@@ -111,8 +144,6 @@ export function SkyView({ lat, lon, weather }: { lat: number; lon: number; weath
   const vis = weather?.current?.visibilityKm ?? 10;
   const stars = Math.max(0, Math.min(100, Math.round(100 - cloud * 0.85 - moon.illumination * 0.25 - (vis < 8 ? (8 - vis) * 4 : 0))));
   const dark = sky.sunAlt < -12;
-  const gold = d?.sunrise ? goldenHour(d.sunrise[0], d.sunset[0]) : null;
-  const blue = d?.sunrise ? blueHour(d.sunrise[0], d.sunset[0]) : null;
 
   const showers = SHOWERS.map(s => {
     let t = new Date(now.getFullYear(), s.m - 1, s.d);
@@ -121,63 +152,68 @@ export function SkyView({ lat, lon, weather }: { lat: number; lon: number; weath
   }).sort((a, b) => a.t.getTime() - b.t.getTime()).slice(0, 3);
 
   return (
-    <div className="grid g3">
-      <Card title="Stargazing tonight" icon="stars" tone="primary">
+    <div className="bento">
+      <Card title="Stargazing tonight" icon="stars" shape="sunny" tone="primary" className="s4">
         <div className="row" style={{ gap: 20 }}>
-          <Ring value={stars} size={104} stroke={11} color="var(--md-primary)">
-            <div style={{ textAlign: 'center' }}><div className="headline-s tnum">{stars}</div><div className="label-s">/ 100</div></div>
+          <Ring value={stars} size={112} stroke={12} color="var(--md-on-primary-container)" track="color-mix(in srgb, var(--md-on-primary-container) 14%, transparent)">
+            <div style={{ textAlign: 'center' }}><div className="headline-m tnum" style={{ fontWeight: 600 }}>{stars}</div><div className="label-s" style={{ opacity: .7 }}>/ 100</div></div>
           </Ring>
           <div>
-            <div className="title-l">{stars >= 75 ? 'Excellent' : stars >= 50 ? 'Decent' : stars >= 25 ? 'Poor' : 'Not tonight'}</div>
+            <div className="headline-s expressive">{stars >= 75 ? 'Excellent' : stars >= 50 ? 'Decent' : stars >= 25 ? 'Poor' : 'Not tonight'}</div>
             <p className="body-m" style={{ opacity: .85 }}>{cloud}% cloud · {moon.illumination}% moon{!dark ? ' · not fully dark yet' : ''}</p>
           </div>
         </div>
+        <p className="body-m card-foot" style={{ opacity: .85 }}>{stars >= 50 ? 'Find a dark spot away from streetlights and give your eyes 20 minutes.' : cloud > 60 ? 'Clouds are in the way. Try again another night.' : 'The moon will wash out the faint stuff. Planets are still fair game.'}</p>
       </Card>
 
-      <Card title="Moon" icon="bedtime" sub={moon.name}>
-        <div className="row" style={{ gap: 16 }}>
-          <span style={{ fontSize: 64, lineHeight: 1 }}>{moon.glyph}</span>
-          <div><div className="headline-m tnum">{moon.illumination}%</div><div className="body-s muted">illuminated · day {moon.age.toFixed(0)} of 29.5</div></div>
+      <Card title="Moon" icon="bedtime" shape="cookie12" sub={moon.name} className="s4">
+        <div className="row" style={{ gap: 18 }}>
+          <MoonDisc age={moon.age} size={92} south={lat < 0} />
+          <div><div className="display-s tnum" style={{ fontWeight: 500 }}>{moon.illumination}%</div><div className="body-s muted">illuminated · day {moon.age.toFixed(0)} of 29.5</div></div>
         </div>
-        <div className="stat-grid">
-          <div className="stat"><span className="label-m muted">Moonrise</span><span className="title-m tnum">{fmt(sky.moonRise)}</span></div>
-          <div className="stat"><span className="label-m muted">Moonset</span><span className="title-m tnum">{fmt(sky.moonSet)}</span></div>
-          <div className="stat"><span className="label-m muted">Next full</span><span className="title-m">{sky.nextFull?.toLocaleDateString([], { month: 'short', day: 'numeric' })}</span></div>
-          <div className="stat"><span className="label-m muted">Next new</span><span className="title-m">{sky.nextNew?.toLocaleDateString([], { month: 'short', day: 'numeric' })}</span></div>
+        <div className="tiles card-foot">
+          <div className="tile"><span className="k"><Icon name="north_east" />Moonrise</span><span className="v tnum" style={{ fontSize: 20 }}>{fmt(sky.moonRise)}</span></div>
+          <div className="tile"><span className="k"><Icon name="south_east" />Moonset</span><span className="v tnum" style={{ fontSize: 20 }}>{fmt(sky.moonSet)}</span></div>
+          <div className="tile"><span className="k"><Icon name="brightness_1" fill />Next full</span><span className="v" style={{ fontSize: 20 }}>{sky.nextFull?.toLocaleDateString([], { month: 'short', day: 'numeric' })}</span></div>
+          <div className="tile"><span className="k"><Icon name="radio_button_unchecked" />Next new</span><span className="v" style={{ fontSize: 20 }}>{sky.nextNew?.toLocaleDateString([], { month: 'short', day: 'numeric' })}</span></div>
         </div>
       </Card>
 
-      <Card title="Planets" icon="public" sub="Position right now">
-        {sky.planets.map(p => {
-          const up = p.alt > 0;
-          const visible = up && sky.sunAlt < -3;
-          return (
-            <div key={p.name} className="row" style={{ minHeight: 44 }}>
-              <span className="dot" style={{ background: visible ? 'var(--md-primary)' : 'var(--md-outline)', margin: 0 }} />
-              <div className="grow"><div className="title-s">{p.name}</div><div className="label-m muted">{up ? `${Math.round(p.alt)}° up · ${['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.round(p.az / 45) % 8]}` : `rises ${fmt(p.rise)}`}</div></div>
-              <span className={`pill ${visible ? 'good' : ''}`}>{visible ? 'Visible' : up ? 'Daylight' : 'Below horizon'}</span>
-            </div>
-          );
-        })}
+      <Card title="Planets" icon="public" shape="clover" sub="Position right now" className="s4 m12">
+        <div>
+          {sky.planets.map(p => {
+            const up = p.alt > 0;
+            const visible = up && sky.sunAlt < -3;
+            return (
+              <div key={p.name} className="list-row">
+                <span className="dot" style={{ width: 10, height: 10, background: visible ? 'var(--md-primary)' : 'var(--md-outline)' }} />
+                <div className="grow"><div className="title-s">{p.name}</div><div className="label-m muted">{up ? `${Math.round(p.alt)}° up · ${['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.round(p.az / 45) % 8]}` : `rises ${fmt(p.rise)}`}</div></div>
+                <span className={`pill ${visible ? 'good' : ''}`}>{visible ? 'Visible' : up ? 'Daylight' : 'Below horizon'}</span>
+              </div>
+            );
+          })}
+        </div>
       </Card>
 
-      <Card title="Light" icon="photo_camera" sub="Photography windows today">
-        {gold && blue ? (
-          <>
-            <div className="row"><Icon name="wb_twilight" style={{ color: 'var(--md-tertiary)' }} /><div className="grow"><div className="title-s">Golden hour</div><div className="body-s muted">{fmtTime(gold.morningStart)}–{fmtTime(gold.morningEnd)} · {fmtTime(gold.eveningStart)}–{fmtTime(gold.eveningEnd)}</div></div></div>
-            <div className="row"><Icon name="nights_stay" style={{ color: 'var(--md-secondary)' }} /><div className="grow"><div className="title-s">Blue hour</div><div className="body-s muted">{fmtTime(blue.morningStart)}–{fmtTime(blue.morningEnd)} · {fmtTime(blue.eveningStart)}–{fmtTime(blue.eveningEnd)}</div></div></div>
-            <div className="row"><Icon name="wb_sunny" /><div className="grow"><div className="title-s">Sunrise · Sunset</div><div className="body-s muted">{hhmm(d.sunrise[0])} · {hhmm(d.sunset[0])}</div></div></div>
-          </>
+      <Card title="Light" icon="photo_camera" shape="flower" sub="Photography windows today" className="s6">
+        {d?.sunrise ? (
+          <div>
+            <div className="list-row"><Icon name="wb_twilight" style={{ color: 'var(--md-tertiary)' }} /><div className="grow"><div className="title-s">Golden hour</div><div className="body-s muted">{wall(d.sunrise[0])}–{wall(d.sunrise[0], 60)} · {wall(d.sunset[0], -60)}–{wall(d.sunset[0])}</div></div></div>
+            <div className="list-row"><Icon name="nights_stay" style={{ color: 'var(--md-secondary)' }} /><div className="grow"><div className="title-s">Blue hour</div><div className="body-s muted">{wall(d.sunrise[0], -30)}–{wall(d.sunrise[0], -10)} · {wall(d.sunset[0], 10)}–{wall(d.sunset[0], 30)}</div></div></div>
+            <div className="list-row"><Icon name="wb_sunny" style={{ color: 'var(--md-primary)' }} /><div className="grow"><div className="title-s">Sunrise · Sunset</div><div className="body-s muted">{hhmm(d.sunrise[0])} · {hhmm(d.sunset[0])}</div></div></div>
+          </div>
         ) : <p className="body-m muted">Loading…</p>}
       </Card>
 
-      <Card title="Meteor showers" icon="shooting_star" sub="Next peaks">
-        {showers.map(s => (
-          <div key={s.n} className="row" style={{ minHeight: 44 }}>
-            <div className="grow"><div className="title-s">{s.n}</div><div className="label-m muted">{s.t.toLocaleDateString([], { month: 'short', day: 'numeric' })} · up to {s.zhr}/hr</div></div>
-            <span className={`pill ${Math.abs(s.days) <= 3 ? 'good' : ''}`}>{Math.abs(s.days) <= 1 ? 'Peak now' : s.days < 0 ? 'Fading' : `in ${s.days}d`}</span>
-          </div>
-        ))}
+      <Card title="Meteor showers" icon="shooting_star" shape="burst" sub="Next peaks" className="s6">
+        <div>
+          {showers.map(s => (
+            <div key={s.n} className="list-row">
+              <div className="grow"><div className="title-s">{s.n}</div><div className="label-m muted">{s.t.toLocaleDateString([], { month: 'short', day: 'numeric' })} · up to {s.zhr}/hr</div></div>
+              <span className={`pill ${Math.abs(s.days) <= 3 ? 'good' : ''}`}>{Math.abs(s.days) <= 1 ? 'Peak now' : s.days < 0 ? 'Fading' : `in ${s.days}d`}</span>
+            </div>
+          ))}
+        </div>
       </Card>
 
       <IssMap lat={lat} lon={lon} />
