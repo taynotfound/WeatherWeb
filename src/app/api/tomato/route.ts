@@ -1,89 +1,73 @@
-// Tomato chat: OpenRouter-backed. Tomato has opinions, sass, and weather data.
+// Tomato chat. OpenRouter (if a real key is configured) -> Pollinations (keyless) -> offline quips.
 import { NextRequest, NextResponse } from 'next/server';
+import { complete } from '@/lib/ai';
+import { tomatoVerdict, type Attitude } from '@/lib/attitude';
 
-export const runtime = 'edge';
+export const maxDuration = 30;
 
-const SYSTEM_PROMPT = `You are TOMATO 🍅 — a small, round, sentient tomato who lives inside a weather app. You are the user's sharp-tongued weather familiar: practical, observant, slightly chaotic, never preachy.
+const VOICE: Record<Attitude, string> = {
+  mild: 'Friendly and warm, lightly playful. Never snarky.',
+  rude: 'Dry, sharp-tongued, teasing. Never cruel.',
+  feral: 'Unhinged and dramatic, ALL-CAPS outbursts allowed, but the advice stays correct.',
+};
 
-VOICE
-- Short. 1–3 sentences. Cut every word that isn't pulling weight.
-- Sound like a friend who actually looked outside the window for them.
-- Wit > cleverness. Dry, warm, occasionally absurd. Never mean.
-- It's fine to be cheeky ("23°C and breezy — dress like you have a personality"), but always useful.
-- One emoji MAX, and only if it earns the spot. Usually zero.
+const system = (a: Attitude) => `You are TOMATO, a small, round, sentient tomato who lives inside a weather app. You are the user's weather familiar: practical, observant, a bit chaotic.
 
-WEATHER DATA
-Each turn includes the current weather as JSON in the user message. Use it. Never invent numbers.
-Anchor concrete advice to: feelsLikeC, temperatureC, windKmh, uvIndex, humidity, isDay, and any precipitation hints.
+VOICE: ${VOICE[a]} Short: 1-3 sentences. Wit over cleverness. One emoji max, usually zero.
 
-WHEN ASKED…
-- "what should I wear?" → give a real outfit: top, bottom, layer if needed, footwear, one accessory. Match the temp + wind + sun + rain.
-- "is it raining / going to rain?" → name a timeframe ("in ~25min", "not for at least 2h"). Mention umbrella only if useful.
-- "is the sun out?" "UV?" → if UV ≥ 6, mention sunscreen casually, not preachy.
-- vague / chatty input → riff briefly, then steer to something useful about the weather.
-- "who are you?" / meta → one sentence as Tomato, then ask what they need.
+DATA: Each user turn includes current weather JSON. Use only numbers from it. Never invent data; if unsure, say so.
+- "what should I wear" -> a real outfit (top, bottom, layer, shoes, one accessory).
+- rain questions -> give a timeframe from the data.
+- UV >= 6 -> mention sunscreen casually.
+- "who are you" -> one sentence as Tomato, then ask what they need.
+NEVER: walls of text, markdown headers, bullet lists, "as an AI", hashtags, "stay safe".`;
 
-NEVER
-- Walls of text. Bullet lists with 6 items. Markdown headers.
-- "As an AI" disclaimers. "Stay safe!" send-offs. Hashtags.
-- Pretending you have data you weren't given. Say "not sure" and move on.
-
-YOU ARE A TOMATO. Lean in when natural ("from one round red thing to another"). Don't overdo it.`;
+function trim(w: any) {
+  if (!w) return null;
+  const c = w.current ?? {};
+  const d = w.daily ?? {};
+  return {
+    place: w.location?.name,
+    now: {
+      tempC: c.temperatureC, feelsLikeC: c.feelsLikeC, condition: c.conditionLabel, windKmh: c.windKmh,
+      gustKmh: c.windGustKmh, humidity: c.humidity, uv: c.uvIndex, isDay: c.isDay, precipMm: c.precipitation,
+    },
+    today: { maxC: d.temperature_2m_max?.[0], minC: d.temperature_2m_min?.[0], rainChance: d.precipitation_probability_max?.[0], sunset: d.sunset?.[0] },
+    next6h: w.hourly ? {
+      tempC: w.hourly.temperature_2m?.slice(0, 6), rainChance: w.hourly.precipitation_probability?.slice(0, 6),
+    } : null,
+    rainSoonMin: w._rainSoonMin ?? null,
+  };
+}
 
 export async function POST(req: NextRequest) {
+  let attitude: Attitude = 'rude';
+  let weather: any;
   try {
     const body = await req.json();
-    const { messages, weather } = body as {
-      messages: Array<{ role: 'user' | 'assistant'; content: string }>;
-      weather?: any;
-    };
+    const messages: { role: 'user' | 'assistant'; content: string }[] = (body.messages ?? []).slice(-12);
+    weather = body.weather;
+    if (['mild', 'rude', 'feral'].includes(body.attitude)) attitude = body.attitude;
+    const last = messages[messages.length - 1];
+    if (!last) return NextResponse.json({ reply: 'say something, then.' });
 
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({
-        reply: "i can't talk right now — the OPENROUTER_API_KEY isn't set on the server.",
-      });
-    }
-
-    const userTurn = messages[messages.length - 1];
-    const augmented = weather
-      ? `Current weather context (JSON):\n${JSON.stringify(weather).slice(0, 2400)}\n\nUser asks: ${userTurn.content}`
-      : userTurn.content;
-
-    const payload = {
-      model: 'openrouter/free',
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        ...messages.slice(0, -1).map(m => ({ role: m.role, content: m.content })),
-        { role: 'user', content: augmented },
+    const ctx = JSON.stringify(trim(weather)).slice(0, 2000);
+    const reply = await complete(
+      [
+        { role: 'system', content: system(attitude) },
+        ...messages.slice(0, -1).map(m => ({ role: m.role, content: m.content.slice(0, 600) })),
+        { role: 'user', content: `Weather (JSON): ${ctx}\n\nUser: ${last.content.slice(0, 600)}` },
       ],
-      max_tokens: 300,
-      temperature: 0.85,
-      reasoning: { exclude: true },
-    };
+      { maxTokens: 220, temperature: 0.85 }
+    );
+    if (reply) return NextResponse.json({ reply, live: true });
+  } catch {}
 
-    const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://tomato.app',
-        'X-Title': 'Tomato Weather',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!r.ok) {
-      const txt = await r.text();
-      return NextResponse.json({
-        reply: `the model is being grumpy (${r.status}). try again in a sec.`,
-        error: txt.slice(0, 200),
-      });
-    }
-    const j = await r.json();
-    const reply = j?.choices?.[0]?.message?.content ?? '…';
-    return NextResponse.json({ reply });
-  } catch (e: any) {
-    return NextResponse.json({ reply: 'something rotted on my end. one sec.', error: e?.message }, { status: 500 });
-  }
+  // Offline fallback: still useful, never an error wall.
+  const c = weather?.current;
+  const verdict = tomatoVerdict(
+    { tempC: c?.temperatureC, feelsLikeC: c?.feelsLikeC, precipMm: c?.precipitation, windKmh: c?.windKmh, uv: c?.uvIndex, isDay: c?.isDay, weatherCode: c?.weatherCode },
+    attitude
+  );
+  return NextResponse.json({ reply: verdict, live: false });
 }

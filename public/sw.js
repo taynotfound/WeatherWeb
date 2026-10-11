@@ -1,4 +1,4 @@
-const CACHE = 'aether-v1';
+const CACHE = 'tomato-v2';
 const ASSETS = ['/', '/manifest.json', '/icon.svg'];
 
 self.addEventListener('install', (e) => {
@@ -20,6 +20,11 @@ self.addEventListener('fetch', (e) => {
   // network-first for API
   if (url.pathname.startsWith('/api/')) {
     e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+    return;
+  }
+  // pages: network-first so a new deploy is never masked by a stale shell
+  if (e.request.mode === 'navigate') {
+    e.respondWith(fetch(e.request).catch(() => caches.match('/')));
     return;
   }
   // stale-while-revalidate for everything else

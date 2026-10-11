@@ -1,482 +1,325 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import {
-  Search, Star, Wind, Droplets, Eye, Gauge,
-  Sun, CalendarDays, Map as MapIcon, Bookmark,
-  MapPin, Share2, AlertTriangle, Keyboard, Telescope,
-} from 'lucide-react';
-import { Tomato } from '@/components/Tomato';
-import { OutfitCard } from '@/components/OutfitCard';
-import { RainTimeline } from '@/components/RainTimeline';
-import { SunCard } from '@/components/SunCard';
-import { HourlyStrip } from '@/components/HourlyStrip';
-import { DailyForecast } from '@/components/DailyForecast';
-import { WeatherMap } from '@/components/WeatherMap';
-import { AirCard } from '@/components/AirCard';
-import AlertsCard from '@/components/AlertsCard';
-import AIInsights from '@/components/AIInsights';
-import PollenCard from '@/components/PollenCard';
-import InstallPrompt from '@/components/InstallPrompt';
-import { WindCompass } from '@/components/WindCompass';
-import { HistoryCard } from '@/components/HistoryCard';
-import { LightningCard } from '@/components/LightningCard';
-import { MoonCard } from '@/components/MoonCard';
-import { ShortcutsOverlay } from '@/components/ShortcutsOverlay';
-import { useFavorites } from '@/lib/favorites';
-import { useUnits } from '@/lib/units';
-import { weatherLabel } from '@/lib/weatherIcon';
-import { AnimatedWeatherIcon } from '@/components/AnimatedWeatherIcon';
-import { ShareModal } from '@/components/ShareModal';
-import { SpaceTab } from '@/components/SpaceTab';
-import { FeelsSparkline } from '@/components/FeelsSparkline';
-import { buildShareText } from '@/lib/share';
-import { useAutoTint } from '@/lib/autoTint';
-import { HeroAnswerCard } from '@/components/HeroAnswerCard';
-import { TempCurveCard } from '@/components/TempCurveCard';
-import { UtilityScores } from '@/components/UtilityScores';
-import { InsightRow } from '@/components/InsightRow';
-import { ComparedToNormalCard } from '@/components/ComparedToNormalCard';
-import { ForecastChangeCard } from '@/components/ForecastChangeCard';
-import { NerdDrawer } from '@/components/NerdDrawer';
-import { RiskBadges } from '@/components/RiskBadges';
-import { useAttitude } from '@/components/AttitudeSlider';
-import { SettingsPane } from '@/components/SettingsPane';
-import { Settings } from 'lucide-react';
-import { rainArrival } from '@/lib/bestHour';
-import { WeekSummary } from '@/components/WeekSummary';
-import { HourlyHeatmap } from '@/components/HourlyHeatmap';
-import { AlertsTab } from '@/components/AlertsTab';
+import dynamic from 'next/dynamic';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Icon, Snack } from '@/components/ui';
+import { Hero } from '@/components/Hero';
+import { DetailsCard, HourlyCard, InsightsCard, OutfitCard, RainCard, ScoresCard, SourcesCard, SunCard, TempChartCard, WindCard } from '@/components/TodayCards';
+import { ClimateCard, DailyCard, ModelChartCard, WeekCard } from '@/components/ForecastCards';
+import { AqiCard, PollenCard, UvCard } from '@/components/AirCards';
+import { AlertBanner } from '@/components/AlertsUI';
+import { SkyView } from '@/components/SkyView';
+import { TomatoChat, TomatoFab } from '@/components/TomatoChat';
+import { SettingsDialog } from '@/components/Settings';
+import { locId, useFavorites, type SavedLocation } from '@/lib/favorites';
+import { usePrefs } from '@/lib/prefs';
+import { seedFor, useTheme } from '@/lib/theme';
+import { sceneKind } from '@/lib/wx';
 
-type LocState = { lat: number; lon: number; name: string; country: string; countryCode: string };
-const DEFAULT: LocState = { lat: 51.5074, lon: -0.1278, name: 'London', country: 'United Kingdom', countryCode: 'GB' };
+const RadarMap = dynamic(() => import('@/components/RadarMap'), { ssr: false, loading: () => <div className="skel" style={{ height: 460 }} /> });
+
+type Loc = { lat: number; lon: number; name: string; country: string; countryCode: string };
+const LONDON: Loc = { lat: 51.5074, lon: -0.1278, name: 'London', country: 'United Kingdom', countryCode: 'GB' };
 const TABS = [
-  { id: 'today',    label: 'today',    icon: Sun },
-  { id: 'forecast', label: 'forecast', icon: CalendarDays },
-  { id: 'alerts',   label: 'alerts',   icon: AlertTriangle },
-  { id: 'map',      label: 'map',      icon: MapIcon },
-  { id: 'space',    label: 'space',    icon: Telescope },
-  { id: 'saved',    label: 'saved',    icon: Bookmark },
+  { id: 'today', label: 'Today', icon: 'home' },
+  { id: 'forecast', label: 'Forecast', icon: 'calendar_month' },
+  { id: 'radar', label: 'Radar', icon: 'map' },
+  { id: 'air', label: 'Air', icon: 'air' },
+  { id: 'sky', label: 'Sky', icon: 'nights_stay' },
 ] as const;
 type Tab = (typeof TABS)[number]['id'];
+const STORE = 'tomato-loc';
 
 export default function Home() {
-  const [loc, setLoc] = useState<LocState>(DEFAULT);
+  const [loc, setLoc] = useState<Loc | null>(null);
   const [weather, setWeather] = useState<any>(null);
   const [air, setAir] = useState<any>(null);
   const [alerts, setAlerts] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [rain, setRain] = useState<any>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Tab>('today');
-  const [query, setQuery] = useState('');
+  const [q, setQ] = useState('');
   const [results, setResults] = useState<any[]>([]);
-  const [toast, setToast] = useState<string | null>(null);
-  const [locating, setLocating] = useState(false);
-  const [showShortcuts, setShowShortcuts] = useState(false);
-  const [showShare, setShowShare] = useState(false);
+  const [focus, setFocus] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [chat, setChat] = useState(false);
+  const [settings, setSettings] = useState(false);
+  const [snack, setSnack] = useState<string | null>(null);
+  const [tick, setTick] = useState(0);
   const searchRef = useRef<HTMLInputElement>(null);
   const fav = useFavorites();
-  const { unit, setUnit, temp, tempUnit, speed, speedUnit } = useUnits();
-  const [attitude, setAttitude] = useAttitude();
-  const [showSettings, setShowSettings] = useState(false);
+  const { unit, setUnit } = usePrefs();
+  const { setSeed } = useTheme();
 
+  const toast = useCallback((s: string) => { setSnack(s); setTimeout(() => setSnack(null), 2600); }, []);
+
+  /* ---- initial location: URL > saved > geolocation > London ---- */
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
-    const lat = parseFloat(p.get('lat') || '');
-    const lon = parseFloat(p.get('lon') || '');
-    const name = p.get('name');
-    if (isFinite(lat) && isFinite(lon)) {
-      setLoc({ lat, lon, name: name || 'Shared', country: '', countryCode: '' });
-      return;
-    }
-    if (!navigator.geolocation) return;
+    const tb = p.get('tab') as Tab | null;
+    if (tb && TABS.some(t => t.id === tb)) setTab(tb);
+    const lat = parseFloat(p.get('lat') || ''), lon = parseFloat(p.get('lon') || '');
+    if (isFinite(lat) && isFinite(lon)) { setLoc({ lat, lon, name: p.get('name') || '', country: '', countryCode: '' }); return; }
+    try { const s = JSON.parse(localStorage.getItem(STORE) || 'null'); if (s && isFinite(s.lat)) { setLoc(s); return; } } catch {}
+    let done = false;
+    const fallback = setTimeout(() => { if (!done) { done = true; setLoc(LONDON); } }, 4500);
+    if (!navigator.geolocation) { clearTimeout(fallback); setLoc(LONDON); return; }
     navigator.geolocation.getCurrentPosition(
-      p => setLoc(l => ({ ...l, lat: p.coords.latitude, lon: p.coords.longitude, name: '' })),
-      () => {},
-      { enableHighAccuracy: false, timeout: 5000, maximumAge: 3600_000 }
+      pos => { if (done) return; done = true; clearTimeout(fallback); setLoc({ lat: pos.coords.latitude, lon: pos.coords.longitude, name: '', country: '', countryCode: '' }); },
+      () => { if (done) return; done = true; clearTimeout(fallback); setLoc(LONDON); },
+      { timeout: 4000, maximumAge: 3600_000 }
     );
+    return () => clearTimeout(fallback);
   }, []);
 
+  const key = loc ? `${loc.lat},${loc.lon}` : '';
+  /* ---- data ---- */
   useEffect(() => {
+    if (!loc) return;
     let alive = true;
     setLoading(true);
-    fetch(`/api/weather?lat=${loc.lat}&lon=${loc.lon}`)
-      .then(r => r.json())
-      .then(j => {
-        if (!alive) return;
-        if (j?.error) { setErr(j.error); return; }
-        setErr(null);
-        setWeather(j);
-        if (j?.location?.name) {
-          setLoc(l => ({
-            ...l,
-            name: j.location.name,
-            country: j.location.country || '',
-            countryCode: j.location.countryCode || '',
-          }));
-        }
-      })
-      .catch(e => alive && setErr(String(e)))
-      .finally(() => alive && setLoading(false));
-    return () => { alive = false; };
-  }, [loc.lat, loc.lon]);
-
-  // Fetch air + alerts in parallel (used by AI Insights too)
-  useEffect(() => {
-    let alive = true;
-    fetch(`/api/air?lat=${loc.lat}&lon=${loc.lon}`).then(r => r.json()).then(j => alive && setAir(j)).catch(() => {});
-    const cc = loc.countryCode ? `&country=${loc.countryCode}` : '';
-    fetch(`/api/alerts?lat=${loc.lat}&lon=${loc.lon}${cc}`).then(r => r.json()).then(j => alive && setAlerts(j)).catch(() => {});
-    return () => { alive = false; };
-  }, [loc.lat, loc.lon, loc.countryCode]);
-
-  useEffect(() => {
-    if (query.length < 2) { setResults([]); return; }
-    const t = setTimeout(() => {
-      fetch(`/api/search?q=${encodeURIComponent(query)}`).then(r => r.json()).then(j => setResults(j.results || []));
-    }, 200);
-    return () => clearTimeout(t);
-  }, [query]);
-
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 2200);
-    return () => clearTimeout(t);
-  }, [toast]);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      const tag = (e.target as HTMLElement)?.tagName;
-      const inField = tag === 'INPUT' || tag === 'TEXTAREA';
-      if (e.key === '?' || (e.shiftKey && e.key === '/')) {
-        e.preventDefault(); setShowShortcuts(s => !s); return;
+    fetch(`/api/weather?lat=${loc.lat}&lon=${loc.lon}`).then(r => r.json()).then(j => {
+      if (!alive) return;
+      if (j.error) { setErr(j.error); return; }
+      setErr(null); setWeather(j);
+      const l = j.location;
+      if (l?.name && (!loc.name || loc.name !== l.name)) {
+        const next = { ...loc, name: loc.name || l.name, country: loc.country || l.country || '', countryCode: loc.countryCode || l.countryCode || '' };
+        setLoc(next);
+        try { localStorage.setItem(STORE, JSON.stringify(next)); } catch {}
       }
-      if (e.key === 'Escape') { setShowShortcuts(false); setShowShare(false); return; }
-      if (inField) return;
-      if (e.key === '/') { e.preventDefault(); searchRef.current?.focus(); return; }
-      if (e.key === '1') setTab('today');
-      else if (e.key === '2') setTab('forecast');
-      else if (e.key === '3') setTab('alerts');
-      else if (e.key === '4') setTab('map');
-      else if (e.key === '5') setTab('saved');
-      else if (e.key === 'l' || e.key === 'L') locate();
-      else if (e.key === 's' || e.key === 'S') share();
-      else if (e.key === 'u' || e.key === 'U') setUnit(unit === 'metric' ? 'imperial' : 'metric');
-    }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    }).catch(e => alive && setErr(String(e?.message || e))).finally(() => alive && setLoading(false));
+    return () => { alive = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unit]);
+  }, [key, tick]);
 
-  function pick(r: any) {
-    setLoc({
-      lat: r.latitude, lon: r.longitude, name: r.name,
-      country: r.country, countryCode: r.country_code || '',
-    });
-    setQuery('');
-    setResults([]);
-    setTab('today');
-  }
+  useEffect(() => {
+    if (!loc) return;
+    let alive = true;
+    const cc = loc.countryCode ? `&country=${loc.countryCode}` : '';
+    fetch(`/api/air?lat=${loc.lat}&lon=${loc.lon}`).then(r => r.json()).then(j => alive && setAir(j)).catch(() => {});
+    fetch(`/api/alerts?lat=${loc.lat}&lon=${loc.lon}${cc}`).then(r => r.json()).then(j => alive && setAlerts(j)).catch(() => {});
+    fetch(`/api/rain?lat=${loc.lat}&lon=${loc.lon}`).then(r => r.json()).then(j => alive && setRain(j)).catch(() => {});
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, loc?.countryCode, tick]);
 
-  function locate() {
-    if (!navigator.geolocation) { setToast('Geolocation not supported'); return; }
-    setLocating(true);
+  // refresh every 10 min and when the tab becomes visible again after a while
+  useEffect(() => {
+    let last = Date.now();
+    const id = setInterval(() => { last = Date.now(); setTick(t => t + 1); }, 10 * 60_000);
+    const vis = () => { if (document.visibilityState === 'visible' && Date.now() - last > 5 * 60_000) { last = Date.now(); setTick(t => t + 1); } };
+    document.addEventListener('visibilitychange', vis);
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', vis); };
+  }, []);
+
+  /* ---- theme follows the sky ---- */
+  useEffect(() => {
+    const c = weather?.current; if (!c) return;
+    let golden = false;
+    const d = weather.daily;
+    if (d?.sunrise?.[0]) {
+      const m = (s: string) => { const [h, mi] = s.slice(11, 16).split(':').map(Number); return h * 60 + mi; };
+      const n = m(c.time), a = m(d.sunrise[0]), b = m(d.sunset[0]);
+      golden = (n >= a - 20 && n <= a + 60) || (n >= b - 60 && n <= b + 20);
+    }
+    setSeed(seedFor(sceneKind(c.weatherCode), c.isDay, golden));
+  }, [weather, setSeed]);
+
+  /* ---- search ---- */
+  useEffect(() => {
+    if (q.trim().length < 2) { setResults([]); return; }
+    let alive = true;
+    const t = setTimeout(() => fetch(`/api/search?q=${encodeURIComponent(q)}`).then(r => r.json()).then(j => alive && setResults(j.results || [])).catch(() => {}), 180);
+    return () => { alive = false; clearTimeout(t); };
+  }, [q]);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const go = useCallback((l: Loc) => {
+    setLoc(l); setQ(''); setResults([]); setFocus(false); setTab('today'); setWeather(null); setRain(null); setAir(null); setAlerts(null);
+    try { localStorage.setItem(STORE, JSON.stringify(l)); } catch {}
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    fav.pushRecent({ id: locId(l.lat, l.lon), name: l.name, country: l.country, countryCode: l.countryCode, latitude: l.lat, longitude: l.lon });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const locate = useCallback(() => {
+    if (!navigator.geolocation) { toast('Location is not supported here'); return; }
+    toast('Finding you…');
     navigator.geolocation.getCurrentPosition(
-      p => {
-        setLoc({ lat: p.coords.latitude, lon: p.coords.longitude, name: '', country: '', countryCode: '' });
-        setLocating(false);
-      },
-      () => { setLocating(false); setToast('Location denied'); },
+      p => go({ lat: p.coords.latitude, lon: p.coords.longitude, name: '', country: '', countryCode: '' }),
+      () => toast('Location permission denied'),
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 }
     );
-  }
+  }, [go, toast]);
 
-  async function share() {
-    setShowShare(true);
-  }
+  const share = useCallback(async () => {
+    if (!loc) return;
+    const c = weather?.current;
+    const url = `${window.location.origin}/?lat=${loc.lat}&lon=${loc.lon}&name=${encodeURIComponent(loc.name)}`;
+    const text = c ? `${loc.name}: ${Math.round(unit === 'imperial' ? c.temperatureC * 9 / 5 + 32 : c.temperatureC)}° and ${c.conditionLabel.toLowerCase()} 🍅` : `${loc.name} on Tomato`;
+    try {
+      if (navigator.share) await navigator.share({ title: `Tomato · ${loc.name}`, text, url });
+      else { await navigator.clipboard.writeText(`${text}\n${url}`); toast('Link copied'); }
+    } catch {}
+  }, [loc, weather, unit, toast]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === '/') { e.preventDefault(); searchRef.current?.focus(); }
+      else if (/^[1-5]$/.test(e.key)) setTab(TABS[+e.key - 1].id);
+      else if (e.key === 'u') setUnit(unit === 'metric' ? 'imperial' : 'metric');
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [unit, setUnit]);
 
   const c = weather?.current;
-  const favId = `${loc.lat.toFixed(2)},${loc.lon.toFixed(2)}`;
-  const isFav = fav?.isFav(favId);
-  const heroCode = c?.weatherCode ?? 0;
-  const heroIsDay = c?.isDay !== false;
-  const tu = tempUnit.replace('°F', '°');
-  const displayName = loc.name || `${loc.lat.toFixed(2)}°, ${loc.lon.toFixed(2)}°`;
+  const place = loc ? (loc.name || weather?.location?.name || `${loc.lat.toFixed(2)}°, ${loc.lon.toFixed(2)}°`) : '';
+  const fullPlace = [place, weather?.location?.admin && weather.location.admin !== place ? weather.location.admin : '', loc?.country || weather?.location?.country].filter(Boolean).slice(0, 2).join(', ');
+  const id = loc ? locId(loc.lat, loc.lon) : '';
+  const isFav = fav.isFav(id);
   const alertCount = alerts?.count ?? 0;
-  const worstSev = alerts?.alerts?.[0]?.severity;
 
-  // Auto-tint background based on current sky conditions
-  useAutoTint(weather);
+  const rainInfo = useMemo(() => {
+    const tl: any[] = rain?.timeline ?? [];
+    const first = tl.find(b => b.mm > 0.05);
+    if (!first) return { soon: null as number | null, now: false };
+    const m = Math.round((new Date(first.time).getTime() - Date.now()) / 60000);
+    return m <= 5 ? { soon: null, now: true } : { soon: m, now: false };
+  }, [rain]);
 
-  const shareUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/?lat=${loc.lat}&lon=${loc.lon}&name=${encodeURIComponent(loc.name)}`
-    : '';
-  const shareData = weather?.current
-    ? buildShareText({
-        location: { name: loc.name, admin: weather?.location?.admin, country: loc.country },
-        current: {
-          temperature_2m: weather.current.temperatureC,
-          apparent_temperature: weather.current.feelsLikeC,
-          weather_code: weather.current.weatherCode,
-          wind_speed_10m: weather.current.windKmh,
-          relative_humidity_2m: weather.current.humidity,
-        },
-        unit: unit === 'imperial' ? 'f' : 'c',
-        url: shareUrl,
-        alertCount: alerts?.count ?? 0,
-      })
-    : { title: `${loc.name} — Tomato`, text: `${loc.name} — Tomato`, url: shareUrl };
+  const showFav = () => loc && (isFav ? fav.remove(id) : (fav.add({ id, name: place, country: loc.country, countryCode: loc.countryCode, latitude: loc.lat, longitude: loc.lon }), toast('Saved')));
+  const pickSaved = (f: SavedLocation) => go({ lat: f.latitude, lon: f.longitude, name: f.name, country: f.country, countryCode: f.countryCode || '' });
 
   return (
-    <main className="shell">
-      <header className="app-header">
-        <div className="brand">
-          <img src="/tomato.svg" alt="" />
-          <h1>Tomato</h1>
-        </div>
-        <div className="header-actions">
-          <button className="btn-icon" aria-label="Use my location" onClick={locate}
-            style={locating ? { color: 'var(--primary)' } : undefined}>
-            <MapPin size={18} />
-          </button>
-          <button className="btn-icon" aria-label="Share location" onClick={share}>
-            <Share2 size={18} />
-          </button>
-          <button className="btn-icon" aria-label="Keyboard shortcuts" onClick={() => setShowShortcuts(true)}>
-            <Keyboard size={18} />
-          </button>
-          <button className="btn-icon" aria-label="Settings" onClick={() => setShowSettings(true)}>
-            <Settings size={18} />
-          </button>
-          {weather && fav && (
-            <button
-              className="btn-icon"
-              aria-label={isFav ? 'Remove from saved' : 'Save location'}
-              onClick={() => {
-                if (isFav) fav.remove(favId);
-                else fav.add({ id: favId, name: displayName, country: loc.country, latitude: loc.lat, longitude: loc.lon });
-              }}
-              style={isFav ? { color: 'var(--primary)' } : undefined}
-            >
-              <Star size={18} fill={isFav ? 'currentColor' : 'none'} />
-            </button>
-          )}
+    <div className="app">
+      <header className={`topbar ${scrolled ? 'scrolled' : ''}`}>
+        <div className="topbar-in">
+          <div className="brand"><img src="/tomato.svg" alt="" />Tomato</div>
+          <div className="searchbar" role="search">
+            <Icon name="search" />
+            <input ref={searchRef} value={q} onChange={e => setQ(e.target.value)} onFocus={() => setFocus(true)} onBlur={() => setTimeout(() => setFocus(false), 150)}
+              placeholder={place ? `${place} — search places` : 'Search places'} aria-label="Search places" autoComplete="off" />
+            {q ? <button className="icon-btn state" aria-label="Clear" onClick={() => setQ('')}><Icon name="close" /></button>
+              : <button className="icon-btn state" aria-label="Use my location" onClick={locate}><Icon name="my_location" /></button>}
+            {focus && (
+              <div className="search-pop">
+                {q.trim().length >= 2 ? (
+                  results.length ? results.map(r => (
+                    <button key={`${r.id}-${r.latitude}`} className="li state" onMouseDown={e => e.preventDefault()} onClick={() => go({ lat: r.latitude, lon: r.longitude, name: r.name, country: r.country || '', countryCode: r.country_code || '' })}>
+                      <Icon name="location_on" /><div className="li-body"><div className="body-l">{r.name}</div><div className="sub">{[r.admin, r.country].filter(Boolean).join(', ')}</div></div>
+                    </button>
+                  )) : <p className="li muted">No matches</p>
+                ) : (
+                  <>
+                    <button className="li state" onMouseDown={e => e.preventDefault()} onClick={locate}><Icon name="my_location" /><div className="li-body body-l">Current location</div></button>
+                    {fav.favorites.length > 0 && <div className="sub-h label-m">Saved</div>}
+                    {fav.favorites.map(f => (
+                      <div key={f.id} className="row">
+                        <button className="li state grow" onMouseDown={e => e.preventDefault()} onClick={() => pickSaved(f)}><Icon name="star" fill /><div className="li-body"><div className="body-l">{f.name}</div><div className="sub">{f.country}</div></div></button>
+                        <button className="icon-btn state" aria-label={`Remove ${f.name}`} onMouseDown={e => e.preventDefault()} onClick={() => fav.remove(f.id)}><Icon name="delete" /></button>
+                      </div>
+                    ))}
+                    {fav.recent.filter(r => !fav.isFav(r.id)).length > 0 && <div className="sub-h label-m">Recent</div>}
+                    {fav.recent.filter(r => !fav.isFav(r.id)).slice(0, 4).map(f => (
+                      <button key={f.id} className="li state" onMouseDown={e => e.preventDefault()} onClick={() => pickSaved(f)}><Icon name="history" /><div className="li-body"><div className="body-l">{f.name}</div><div className="sub">{f.country}</div></div></button>
+                    ))}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+          {weather && <button className={`icon-btn state ${isFav ? 'on' : ''}`} aria-label={isFav ? 'Remove from saved' : 'Save place'} aria-pressed={isFav} onClick={showFav}><Icon name="star" fill={isFav} /></button>}
+          <button className="icon-btn state" aria-label="Share" onClick={share}><Icon name="ios_share" /></button>
+          <button className="icon-btn state" aria-label="Settings" onClick={() => setSettings(true)}><Icon name="settings" /></button>
         </div>
       </header>
 
-      <div className="search-wrap">
-        <Search size={16} className="search-icon" />
-        <input
-          ref={searchRef}
-          className="input"
-          placeholder="Search city  ( / to focus )"
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          style={{ paddingLeft: 36 }}
-        />
-        {results.length > 0 && (
-          <div className="search-results">
-            {results.map((r: any) => (
-              <button key={r.id} className="search-result" onClick={() => pick(r)}>
-                {r.name}<span className="country"> · {r.admin ? `${r.admin}, ` : ''}{r.country}</span>
-              </button>
-            ))}
+      <main className="main">
+        {err && !weather && (
+          <div className="card error" style={{ marginTop: 16 }}>
+            <div className="card-h"><Icon name="cloud_off" /><h2 className="title-m grow">Couldn't load the weather</h2></div>
+            <p className="body-m">{err}</p>
+            <button className="btn filled state" style={{ alignSelf: 'flex-start' }} onClick={() => setTick(t => t + 1)}>Retry</button>
           </div>
         )}
-      </div>
+        {(!weather && !err) && (
+          <div className="grid" style={{ marginTop: 8 }}>
+            <div className="skel hero" style={{ minHeight: 380 }} />
+            {[0, 1, 2].map(i => <div key={i} className="skel" style={{ height: 200 }} />)}
+          </div>
+        )}
 
-      <nav className="tabs" role="tablist">
+        {weather && c && tab === 'today' && (
+          <div className="grid g3">
+            <AlertBanner alerts={alerts} />
+            <Hero weather={weather} place={fullPlace} rainSoonMin={rainInfo.soon} rainingNow={rainInfo.now || (rain?.raining && c.precipitation > 0)} daily0={{ max: weather.daily?.temperature_2m_max?.[0], min: weather.daily?.temperature_2m_min?.[0] }} />
+            <InsightsCard weather={weather} air={air} alerts={alerts} />
+            <HourlyCard weather={weather} />
+            <OutfitCard weather={weather} />
+            <RainCard data={rain} />
+            <ScoresCard weather={weather} />
+            <TempChartCard weather={weather} />
+            <WindCard weather={weather} />
+            <DetailsCard weather={weather} />
+            <SunCard weather={weather} />
+            <ClimateCard lat={loc!.lat} lon={loc!.lon} weather={weather} />
+            <SourcesCard weather={weather} />
+          </div>
+        )}
+
+        {weather && tab === 'forecast' && (
+          <div className="grid g3">
+            <WeekCard weather={weather} />
+            <TempChartCard weather={weather} />
+            <DailyCard weather={weather} />
+            <ClimateCard lat={loc!.lat} lon={loc!.lon} weather={weather} />
+            <SunCard weather={weather} />
+            <ModelChartCard weather={weather} lat={loc!.lat} lon={loc!.lon} />
+          </div>
+        )}
+
+        {loc && tab === 'radar' && <div style={{ marginTop: 8 }}><RadarMap lat={loc.lat} lon={loc.lon} /></div>}
+
+        {weather && tab === 'air' && (
+          <div className="grid g3">
+            <AlertBanner alerts={alerts} />
+            <AqiCard air={air} />
+            <UvCard weather={weather} />
+            <PollenCard air={air} />
+          </div>
+        )}
+
+        {weather && tab === 'sky' && <SkyView lat={loc!.lat} lon={loc!.lon} weather={weather} />}
+
+        <footer className="footer">
+          Made with 🍅 by <a href="https://taymaerz.de" target="_blank" rel="noopener noreferrer">Tay</a> · <a href="https://taymaerz.de/impressum" target="_blank" rel="noopener noreferrer">Impressum</a>
+          {weather?.sources && <><br />Sources: {weather.sources.used.join(' · ')}{loading ? ' · refreshing…' : ''}</>}
+        </footer>
+      </main>
+
+      <nav className="nav" role="tablist" aria-label="Sections">
         {TABS.map(t => (
-          <button
-            key={t.id}
-            role="tab"
-            aria-selected={tab === t.id}
-            className="tab"
-            onClick={() => setTab(t.id)}
-          >
+          <button key={t.id} role="tab" aria-selected={tab === t.id} className="nav-item state" onClick={() => { setTab(t.id); window.scrollTo({ top: 0 }); }}>
+            <span className="nav-pill"><Icon name={t.icon} />{t.id === 'air' && alertCount > 0 && <span className="badge">{alertCount}</span>}</span>
             {t.label}
-            {t.id === 'alerts' && alertCount > 0 && (
-              <span className={`tab__badge tab__badge--${worstSev || 'warn'}`}>{alertCount}</span>
-            )}
           </button>
         ))}
       </nav>
 
-      {err && <div className="card"><p>{err}</p></div>}
-      {loading && !weather && <div className="card"><p className="empty">Loading…</p></div>}
-
-      {weather && c && tab === 'today' && (() => {
-        const rain = rainArrival(weather.minutely_15);
-        const rainSoonMin = rain ? rain.minutes : null;
-        const rainingNow = !!rain?.rainingNow;
-        const todayMaxC = weather?.daily?.temperature_2m_max?.[0] ?? null;
-        const todayPrecipMm = weather?.daily?.precipitation_sum?.[0] ?? null;
-        return (
-          <>
-            {/* Hero — the one card that answers "what's it doing?" in 2s */}
-            <HeroAnswerCard
-              current={c}
-              hourly={weather.hourly}
-              rainSoonMin={rainSoonMin}
-              rainingNow={rainingNow}
-              locationName={`${displayName}${loc.country ? `, ${loc.country}` : ''}`}
-              attitude={attitude}
-            />
-
-            {/* What to wear — primary selling point, lives directly under hero */}
-            <OutfitCard weather={weather} />
-
-            {/* Attitude + risks: lightweight controls, only show risks if present */}
-            <div className="row" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-              <RiskBadges current={c} weatherCode={c.weatherCode} />
-            </div>
-
-            {/* Utility scores — 4 chips, the "should I?" answers */}
-            <UtilityScores current={c} isDay={c.isDay !== false} />
-
-            {/* Decision insights: best hour + rain arrival */}
-            <InsightRow hourly={weather.hourly} minutely_15={weather.minutely_15} timezone={weather.timezone} />
-
-            {/* Today vs normal */}
-            {todayMaxC != null && (
-              <ComparedToNormalCard
-                lat={loc.lat}
-                lon={loc.lon}
-                todayMaxC={todayMaxC}
-                todayPrecipMm={todayPrecipMm}
-              />
-            )}
-
-            {/* What changed since yesterday's forecast */}
-            <ForecastChangeCard lat={loc.lat} lon={loc.lon} />
-
-            {/* Alerts only if present (no equal-weight padding) */}
-            {alertCount > 0 && <AlertsCard lat={loc.lat} lon={loc.lon} country={loc.countryCode} />}
-
-            {/* Short-term timeline */}
-            <RainTimeline lat={loc.lat} lon={loc.lon} />
-            <TempCurveCard weather={weather} />
-            <HourlyStrip weather={weather} />
-
-            {/* Supporting cards — demoted, but still here */}
-            <AirCard lat={loc.lat} lon={loc.lon} />
-            <SunCard weather={weather} />
-
-            {/* Nerd drawer last — collapsed by default */}
-            <NerdDrawer current={c} sources={weather.sources} />
-          </>
-        );
-      })()}
-
-      {weather && tab === 'forecast' && (
-        <>
-          <WeekSummary weather={weather} />
-          <HourlyHeatmap weather={weather} />
-          <DailyForecast weather={weather} lat={loc.lat} lon={loc.lon} />
-        </>
-      )}
-
-      {tab === 'alerts' && (
-        <AlertsTab
-          lat={loc.lat}
-          lon={loc.lon}
-          country={loc.countryCode}
-          weather={weather}
-          alertCount={alertCount}
-        />
-      )}
-
-      {tab === 'map' && (
-        <div className="map-wrap">
-          <WeatherMap lat={loc.lat} lon={loc.lon} />
-        </div>
-      )}
-
-      {tab === 'space' && (
-        <SpaceTab lat={loc.lat} lon={loc.lon} />
-      )}
-
-      {tab === 'saved' && (
-        <div className="card">
-          {fav.favorites.length === 0 ? (
-            <p className="empty">No saved places. Tap the star to save the current spot.</p>
-          ) : (
-            <div className="daily">
-              {fav.favorites.map(f => (
-                <div key={f.id} className="row" style={{ justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--border-soft)' }}>
-                  <button
-                    onClick={() => { setLoc({ lat: f.latitude, lon: f.longitude, name: f.name, country: f.country, countryCode: '' }); setTab('today'); }}
-                    style={{ background: 'transparent', border: 0, textAlign: 'left', color: 'var(--ink)', flex: 1, padding: 0 }}
-                  >
-                    {f.name}<span style={{ color: 'var(--ink-mute)' }}> · {f.country}</span>
-                  </button>
-                  <button className="btn" onClick={() => fav.remove(f.id)}>Remove</button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      <nav className="bottom-nav" role="tablist" aria-label="Sections">
-        {TABS.map(t => {
-          const Icon = t.icon;
-          return (
-            <button
-              key={t.id}
-              role="tab"
-              aria-selected={tab === t.id}
-              className="bottom-nav-btn"
-              onClick={() => setTab(t.id)}
-            >
-              <Icon size={20} strokeWidth={1.7} />
-              <span>{t.label}</span>
-              {t.id === 'alerts' && alertCount > 0 && (
-                <span className={`nav-badge nav-badge--${worstSev || 'warn'}`}>{alertCount}</span>
-              )}
-            </button>
-          );
-        })}
-      </nav>
-
-      {toast && <div className="toast">{toast}</div>}
-      {showShortcuts && <ShortcutsOverlay onClose={() => setShowShortcuts(false)} />}
-      <SettingsPane open={showSettings} onClose={() => setShowSettings(false)} />
-      {showShare && (
-        <ShareModal
-          title={shareData.title}
-          text={shareData.text}
-          url={shareData.url}
-          onClose={() => setShowShare(false)}
-          weatherData={weather?.current ? {
-            temp: unit === 'imperial'
-              ? `${Math.round(weather.current.temperatureC * 9/5 + 32)}°F`
-              : `${Math.round(weather.current.temperatureC)}°C`,
-            feelsLike: unit === 'imperial'
-              ? `${Math.round(weather.current.feelsLikeC * 9/5 + 32)}°F`
-              : `${Math.round(weather.current.feelsLikeC)}°C`,
-            condition: weather.current.conditionLabel ?? '',
-            location: loc.name,
-            humidity: weather.current.humidity,
-            wind: unit === 'imperial'
-              ? `${Math.round(weather.current.windKmh * 0.621)} mph`
-              : `${Math.round(weather.current.windKmh)} km/h`,
-            code: weather.current.weatherCode,
-            isDay: weather.current.isDay === 1,
-          } : undefined}
-        />
-      )}
-      <InstallPrompt />
-      <Tomato weather={weather} />
-
-      <footer className="app-footer">
-        <span>Made with 🍅 by <a href="https://taymaerz.de" target="_blank" rel="noopener noreferrer">Tay</a></span>
-        <span className="app-footer__sep">·</span>
-        <a href="https://taymaerz.de/impressum" target="_blank" rel="noopener noreferrer">Impressum</a>
-        <span className="app-footer__sep">·</span>
-        <span>Data: Open-Meteo</span>
-      </footer>
-    </main>
+      {weather && <TomatoFab onClick={() => setChat(true)} />}
+      {chat && <TomatoChat weather={weather} onClose={() => setChat(false)} />}
+      {settings && <SettingsDialog onClose={() => setSettings(false)} />}
+      <Snack text={snack} />
+    </div>
   );
 }

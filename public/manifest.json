@@ -4,10 +4,9 @@
   "description": "A weather app with a tomato who has opinions about what you should wear.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F4EFE2",
-  "theme_color": "#B5552E",
-  "orientation": "portrait-primary",
-  "categories": ["weather", "utilities"],
+  "background_color": "#101418",
+  "theme_color": "#101418",
+    "categories": ["weather", "utilities"],
   "icons": [
     { "src": "/tomato.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ]

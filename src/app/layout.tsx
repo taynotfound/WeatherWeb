@@ -1,101 +1,52 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, Funnel_Display, JetBrains_Mono } from 'next/font/google';
+import { Roboto_Flex, Roboto_Mono } from 'next/font/google';
 import './globals.css';
-import { UnitsProvider } from '@/lib/units';
+import { PrefsProvider } from '@/lib/prefs';
+import { ThemeProvider } from '@/lib/theme';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
-const funnel = Funnel_Display({
-  subsets: ['latin'],
-  variable: '--font-display',
-  display: 'swap',
-  weight: ['400', '500', '600', '700', '800'],
-});
-const mono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono', display: 'swap' });
+const flex = Roboto_Flex({ subsets: ['latin'], variable: '--font-roboto-flex', display: 'swap' });
+const mono = Roboto_Mono({ subsets: ['latin'], variable: '--font-roboto-mono', display: 'swap' });
 
-const SITE = 'https://upload-dot-head-expo.trycloudflare.com';
+const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://tomato.taymaerz.de';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE),
-  title: {
-    default: 'Tomato — weather, with attitude',
-    template: '%s · Tomato',
-  },
-  description:
-    'Fast, beautiful weather: hourly forecast, rain nowcast, multi-layer radar, air quality, severe-weather warnings, and a sassy tomato that tells you what to wear.',
+  title: { default: 'Tomato — weather, with attitude', template: '%s · Tomato' },
+  description: 'Weather from six independent sources, live radar, air quality, alerts and a sassy tomato that tells you what to wear.',
   applicationName: 'Tomato',
-  keywords: [
-    'weather', 'forecast', 'rain radar', 'air quality', 'AQI',
-    'severe weather warnings', 'thunderstorm', 'Open-Meteo',
-    'Met.no', 'RainViewer', 'weather PWA', 'Tomato weather',
-  ],
+  keywords: ['weather', 'forecast', 'rain radar', 'air quality', 'severe weather warnings', 'Open-Meteo', 'MET Norway', 'WeatherAPI', 'weather PWA'],
   authors: [{ name: 'Tay', url: 'https://taymaerz.de' }],
-  creator: 'Tay',
-  publisher: 'Tomato',
   manifest: '/manifest.json',
-  appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'Tomato' },
-  icons: {
-    icon: [
-      { url: '/tomato.svg', type: 'image/svg+xml' },
-      { url: '/tomato.svg', sizes: 'any' },
-    ],
-    apple: '/tomato.svg',
-  },
-  openGraph: {
-    type: 'website',
-    siteName: 'Tomato',
-    title: 'Tomato — weather, with attitude',
-    description:
-      'Hourly forecast, rain nowcast, radar, air quality and severe-weather alerts. With a sassy tomato.',
-    url: SITE,
-    images: [{ url: '/api/og', width: 1200, height: 630, alt: 'Tomato weather' }],
-    locale: 'en_US',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Tomato — weather, with attitude',
-    description: 'Forecast, radar, AQI and severe-weather alerts. With a sassy tomato.',
-    images: ['/api/og'],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 },
-  },
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'Tomato' },
+  icons: { icon: [{ url: '/tomato.svg', type: 'image/svg+xml' }], apple: '/tomato.svg' },
+  openGraph: { type: 'website', siteName: 'Tomato', title: 'Tomato — weather, with attitude', description: 'Six sources, live radar, air quality and a sassy tomato.', images: [{ url: '/api/og', width: 1200, height: 630 }] },
+  twitter: { card: 'summary_large_image', title: 'Tomato — weather, with attitude', images: ['/api/og'] },
+  robots: { index: true, follow: true },
   category: 'weather',
 };
 
 export const viewport: Viewport = {
-  themeColor: '#1a1625',
-  width: 'device-width',
-  initialScale: 1,
-  maximumScale: 5,
-  viewportFit: 'cover',
+  themeColor: [{ media: '(prefers-color-scheme: light)', color: '#f8f9ff' }, { media: '(prefers-color-scheme: dark)', color: '#101418' }],
+  width: 'device-width', initialScale: 1, viewportFit: 'cover',
 };
 
-const jsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'WebApplication',
-  name: 'Tomato',
-  description: 'Weather forecast, radar, air quality and severe-weather alerts.',
-  url: SITE,
-  applicationCategory: 'WeatherApplication',
-  operatingSystem: 'Any',
-  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-  creator: { '@type': 'Person', name: 'Tay' },
-};
+// Set data-theme before first paint so there is no light/dark flash.
+const themeInit = `try{var m=localStorage.getItem('tomato-theme')||'auto';var d=m==='dark'||(m==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=d?'dark':'light';document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${funnel.variable} ${mono.variable}`}>
+    <html lang="en" className={`${flex.variable} ${mono.variable}`} suppressHydrationWarning>
       <head>
-        <link rel="canonical" href={SITE} />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
+        <script dangerouslySetInnerHTML={{ __html: themeInit }} />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* Material Symbols (variable icon font) */}
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" />
       </head>
       <body>
-        <UnitsProvider>{children}</UnitsProvider>
+        <ThemeProvider><PrefsProvider>{children}</PrefsProvider></ThemeProvider>
+        <script dangerouslySetInnerHTML={{ __html: `if('serviceWorker' in navigator&&location.protocol==='https:'){navigator.serviceWorker.register('/sw.js').catch(function(){})}` }} />
       </body>
     </html>
   );
