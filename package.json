@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@material/material-color-utilities": "^0.4.0",
-    "@vercel/og": "^1.0.1",
+    "@vercel/og": "^1.0.3",
     "astronomy-engine": "^2.1.19",
     "maplibre-gl": "^6.9.1",
     "next": "16.4.1",
